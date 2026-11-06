@@ -1,0 +1,478 @@
+/*
+ * Themes. <html> carries data-theme (dark | light), data-scheme (the theme), data-accent and
+ * data-glass (on | off); src/lib/theme.ts and the script in index.html set them. Selectors use the
+ * attributes alone, so a preview card wears any theme by carrying the same attributes.
+ *
+ * 1. Theme blocks set surfaces, text, status, chart and elevation colours, and how strong the
+ *    glass is. Every one declares the same set (themes.test.ts checks).
+ * 2. Accent blocks set the accent, with deeper values on light pages.
+ * 3. The derived block mixes everything else from those once: soft tints, the ambient
+ *    background and the glass light, which takes the accent's colour.
+ * 4. Glass off, reduced transparency and more contrast swap the glass tokens for solid surfaces,
+ *    so materials.css never needs a condition.
+ */
+
+/* ---------- 1. Themes ---------- */
+
+:root,
+[data-scheme='midnight'] {
+  color-scheme: dark;
+  --bg: #070b18;
+  --bg-top: #0c1430;
+  --glow: 34%;
+  --surface: #0e1528;
+  --surface-2: #141d33;
+  --surface-3: #1c2742;
+  --card-fill: rgb(24 36 70 / 0.42);
+  --field-fill: rgb(4 8 22 / 0.5);
+  --border: rgb(150 180 255 / 0.1);
+  --border-strong: rgb(150 180 255 / 0.2);
+  --text: #eaf0ff;
+  --muted: #9aa8c7;
+  --faint: #7482a6;
+  --danger: #ff6b6b;
+  --on-danger: #1a0505;
+  --warn: #f5b94a;
+  --success: #4fd18b;
+  --pr: #ffc94d;
+  --grid: rgb(150 180 255 / 0.08);
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
+  --series-other: #6b7690;
+  --elev-sm: 0 1px 2px rgb(0 0 0 / 0.35);
+  --elev-card: 0 1px 2px rgb(0 0 0 / 0.35), 0 16px 40px rgb(0 0 0 / 0.42);
+  --elev-float: 0 6px 16px rgb(0 0 0 / 0.35), 0 24px 60px rgb(0 0 0 / 0.55);
+  --scrim: rgb(2 4 12 / 0.6);
+  --glass-fill: rgb(16 25 50 / 0.55);
+  --glass-panel: rgb(13 20 39 / 0.86);
+  --glass-light-base: #e6eeff;
+  --glass-light-tint: 30%;
+  --glass-control-pct: 8%;
+  --glass-press-pct: 16%;
+  --glass-highlight-pct: 32%;
+  --glass-sheen-pct: 13%;
+  --glass-glint-pct: 24%;
+  --glass-edge-base: #e6eeff;
+  --glass-edge-tint: 40%;
+  --glass-edge-pct: 22%;
+  --glass-shade: rgb(0 0 0 / 0.32);
+  --glass-shadow: 0 2px 6px rgb(0 0 0 / 0.3), 0 10px 30px rgb(0 0 0 / 0.42);
+  --glass-backdrop: blur(22px) saturate(1.6) brightness(0.75);
+  --glass-text-top: #f6f9ff;
+  --glass-text-bottom: #9fb8f5;
+  --theme-color: #070b18;
+}
+
+[data-scheme='carbon'] {
+  color-scheme: dark;
+  --bg: #050506;
+  --bg-top: #0e0f11;
+  --glow: 22%;
+  --surface: #111214;
+  --surface-2: #18191c;
+  --surface-3: #222327;
+  --card-fill: rgb(34 35 40 / 0.5);
+  --field-fill: rgb(0 0 0 / 0.45);
+  --border: rgb(255 255 255 / 0.08);
+  --border-strong: rgb(255 255 255 / 0.16);
+  --text: #f2f3f5;
+  --muted: #a1a4ab;
+  --faint: #7a7d85;
+  --danger: #ff6b6b;
+  --on-danger: #1a0505;
+  --warn: #f5b94a;
+  --success: #4fd18b;
+  --pr: #ffc94d;
+  --grid: rgb(255 255 255 / 0.07);
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
+  --series-other: #6e7179;
+  --elev-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+  --elev-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 16px 40px rgb(0 0 0 / 0.48);
+  --elev-float: 0 6px 16px rgb(0 0 0 / 0.4), 0 24px 60px rgb(0 0 0 / 0.6);
+  --scrim: rgb(0 0 0 / 0.62);
+  --glass-fill: rgb(24 25 29 / 0.55);
+  --glass-panel: rgb(18 19 22 / 0.88);
+  --glass-light-base: #f4f5f7;
+  --glass-light-tint: 18%;
+  --glass-control-pct: 8%;
+  --glass-press-pct: 15%;
+  --glass-highlight-pct: 28%;
+  --glass-sheen-pct: 11%;
+  --glass-glint-pct: 22%;
+  --glass-edge-base: #f4f5f7;
+  --glass-edge-tint: 25%;
+  --glass-edge-pct: 18%;
+  --glass-shade: rgb(0 0 0 / 0.35);
+  --glass-shadow: 0 2px 6px rgb(0 0 0 / 0.32), 0 10px 30px rgb(0 0 0 / 0.45);
+  --glass-backdrop: blur(22px) saturate(1.4) brightness(0.75);
+  --glass-text-top: #ffffff;
+  --glass-text-bottom: #b9bcc4;
+  --theme-color: #050506;
+}
+
+[data-scheme='ember'] {
+  color-scheme: dark;
+  --bg: #0d0806;
+  --bg-top: #1c100a;
+  --glow: 30%;
+  --surface: #1a110d;
+  --surface-2: #241811;
+  --surface-3: #2e2017;
+  --card-fill: rgb(46 30 21 / 0.44);
+  --field-fill: rgb(8 4 2 / 0.5);
+  --border: rgb(255 220 190 / 0.09);
+  --border-strong: rgb(255 220 190 / 0.18);
+  --text: #fbefe6;
+  --muted: #b8a291;
+  --faint: #8c7767;
+  --danger: #ff5c5c;
+  --on-danger: #1a0505;
+  --warn: #f5c26b;
+  --success: #6fd59a;
+  --pr: #ffd166;
+  --grid: rgb(255 220 190 / 0.07);
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
+  --series-other: #7d6e64;
+  --elev-sm: 0 1px 2px rgb(0 0 0 / 0.38);
+  --elev-card: 0 1px 2px rgb(0 0 0 / 0.35), 0 16px 40px rgb(0 0 0 / 0.42);
+  --elev-float: 0 6px 16px rgb(0 0 0 / 0.35), 0 24px 60px rgb(0 0 0 / 0.55);
+  --scrim: rgb(6 3 2 / 0.62);
+  --glass-fill: rgb(34 22 15 / 0.55);
+  --glass-panel: rgb(28 18 12 / 0.88);
+  --glass-light-base: #fff3e8;
+  --glass-light-tint: 30%;
+  --glass-control-pct: 8%;
+  --glass-press-pct: 16%;
+  --glass-highlight-pct: 32%;
+  --glass-sheen-pct: 13%;
+  --glass-glint-pct: 24%;
+  --glass-edge-base: #fff3e8;
+  --glass-edge-tint: 40%;
+  --glass-edge-pct: 21%;
+  --glass-shade: rgb(0 0 0 / 0.32);
+  --glass-shadow: 0 2px 6px rgb(0 0 0 / 0.3), 0 10px 30px rgb(0 0 0 / 0.42);
+  --glass-backdrop: blur(22px) saturate(1.6) brightness(0.72);
+  --glass-text-top: #fff8f0;
+  --glass-text-bottom: #f0b48f;
+  --theme-color: #0d0806;
+}
+
+[data-scheme='daylight'] {
+  color-scheme: light;
+  --bg: #eef2f9;
+  --bg-top: #e2e9f8;
+  --glow: 26%;
+  --surface: #ffffff;
+  --surface-2: #f2f5fa;
+  --surface-3: #e6ebf3;
+  --card-fill: rgb(255 255 255 / 0.6);
+  --field-fill: rgb(236 241 249 / 0.75);
+  --border: rgb(13 22 48 / 0.09);
+  --border-strong: rgb(13 22 48 / 0.17);
+  --text: #0d1630;
+  --muted: #56617a;
+  --faint: #7c879e;
+  --danger: #c62f3a;
+  --on-danger: #ffffff;
+  --warn: #a66a00;
+  --success: #1f8a55;
+  --pr: #9a6200;
+  --grid: rgb(13 22 48 / 0.07);
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
+  --series-other: #9aa3b5;
+  --elev-sm: 0 1px 2px rgb(13 22 48 / 0.08);
+  --elev-card: 0 1px 2px rgb(13 22 48 / 0.06), 0 14px 36px rgb(13 22 48 / 0.12);
+  --elev-float: 0 6px 16px rgb(13 22 48 / 0.1), 0 24px 60px rgb(13 22 48 / 0.2);
+  --scrim: rgb(13 22 48 / 0.32);
+  --glass-fill: rgb(250 252 255 / 0.58);
+  --glass-panel: rgb(250 252 255 / 0.9);
+  --glass-light-base: #ffffff;
+  --glass-light-tint: 12%;
+  --glass-control-pct: 55%;
+  --glass-press-pct: 85%;
+  --glass-highlight-pct: 95%;
+  --glass-sheen-pct: 70%;
+  --glass-glint-pct: 75%;
+  --glass-edge-base: #0d1630;
+  --glass-edge-tint: 20%;
+  --glass-edge-pct: 14%;
+  --glass-shade: rgb(13 22 48 / 0.06);
+  --glass-shadow: 0 2px 6px rgb(13 22 48 / 0.06), 0 10px 30px rgb(13 22 48 / 0.1);
+  --glass-backdrop: blur(22px) saturate(1.8);
+  --glass-text-top: #3a5ccc;
+  --glass-text-bottom: #0d1630;
+  --theme-color: #eef2f9;
+}
+
+[data-scheme='chalk'] {
+  color-scheme: light;
+  --bg: #f5f2ec;
+  --bg-top: #eee8dd;
+  --glow: 20%;
+  --surface: #fffdf9;
+  --surface-2: #f3efe8;
+  --surface-3: #e9e3d8;
+  --card-fill: rgb(255 253 249 / 0.62);
+  --field-fill: rgb(243 239 232 / 0.75);
+  --border: rgb(40 30 20 / 0.09);
+  --border-strong: rgb(40 30 20 / 0.17);
+  --text: #1c1a17;
+  --muted: #625c53;
+  --faint: #8a8378;
+  --danger: #c2333b;
+  --on-danger: #ffffff;
+  --warn: #a66a00;
+  --success: #1f7a4d;
+  --pr: #9a6200;
+  --grid: rgb(40 30 20 / 0.07);
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
+  --series-other: #a39b8f;
+  --elev-sm: 0 1px 2px rgb(40 30 20 / 0.08);
+  --elev-card: 0 1px 2px rgb(40 30 20 / 0.06), 0 14px 36px rgb(40 30 20 / 0.12);
+  --elev-float: 0 6px 16px rgb(40 30 20 / 0.1), 0 24px 60px rgb(40 30 20 / 0.2);
+  --scrim: rgb(30 22 14 / 0.3);
+  --glass-fill: rgb(255 252 246 / 0.58);
+  --glass-panel: rgb(255 252 246 / 0.9);
+  --glass-light-base: #ffffff;
+  --glass-light-tint: 12%;
+  --glass-control-pct: 55%;
+  --glass-press-pct: 85%;
+  --glass-highlight-pct: 95%;
+  --glass-sheen-pct: 70%;
+  --glass-glint-pct: 75%;
+  --glass-edge-base: #1c1a17;
+  --glass-edge-tint: 15%;
+  --glass-edge-pct: 14%;
+  --glass-shade: rgb(40 30 20 / 0.06);
+  --glass-shadow: 0 2px 6px rgb(40 30 20 / 0.06), 0 10px 30px rgb(40 30 20 / 0.1);
+  --glass-backdrop: blur(22px) saturate(1.6);
+  --glass-text-top: #3d6b55;
+  --glass-text-bottom: #1c1a17;
+  --theme-color: #f5f2ec;
+}
+
+/* ---------- 2. Accents ----------
+ * --accent marks (rings, chart lines, icons); --accent-2 its companion hue in gradients and
+ * glows; --accent-fill and --accent-gradient fill buttons, with --on-accent on top;
+ * --accent-text is the accent as readable text. Gradients run 135deg: tint, base, deep.
+ * :root wears Electric as a fallback should the attribute ever be missing. */
+
+:root,
+[data-accent='electric'] {
+  --accent: #4a8dff;
+  --accent-2: #3ee0ff;
+  --accent-fill: #2a64f6;
+  --accent-gradient: linear-gradient(135deg, #4a8dff 0%, #2a64f6 50%, #1d3fcc 100%);
+  --accent-text: #7fb0ff;
+  --on-accent: #ffffff;
+}
+[data-accent='volt'] {
+  --accent: #c3ef35;
+  --accent-2: #4ee8a0;
+  --accent-fill: #c3ef35;
+  --accent-gradient: linear-gradient(135deg, #e9ff9e 0%, #c3ef35 50%, #8cbf14 100%);
+  --accent-text: #d4f56a;
+  --on-accent: #141c00;
+}
+[data-accent='blaze'] {
+  --accent: #ff6d3f;
+  --accent-2: #ffb648;
+  --accent-fill: #ff6d3f;
+  --accent-gradient: linear-gradient(135deg, #ffb08a 0%, #ff6d3f 50%, #e0421d 100%);
+  --accent-text: #ff9a73;
+  --on-accent: #1f0800;
+}
+[data-accent='emerald'] {
+  --accent: #34d399;
+  --accent-2: #3ee0ff;
+  --accent-fill: #34d399;
+  --accent-gradient: linear-gradient(135deg, #a7f3d0 0%, #34d399 50%, #0f9e6e 100%);
+  --accent-text: #5fe3b0;
+  --on-accent: #03170d;
+}
+[data-accent='violet'] {
+  --accent: #9d7bff;
+  --accent-2: #ff7ad9;
+  --accent-fill: #7451f5;
+  --accent-gradient: linear-gradient(135deg, #9a7dff 0%, #7451f5 50%, #5233d6 100%);
+  --accent-text: #b39dff;
+  --on-accent: #ffffff;
+}
+[data-accent='rose'] {
+  --accent: #ff5c8e;
+  --accent-2: #ffa36b;
+  --accent-fill: #d6336a;
+  --accent-gradient: linear-gradient(135deg, #ec5b8a 0%, #d6336a 50%, #a8174c 100%);
+  --accent-text: #ff8fb3;
+  --on-accent: #ffffff;
+}
+
+/* On light pages (and inside them, unless a dark preview says otherwise). */
+[data-theme='light'][data-accent='electric'],
+[data-theme='light'] [data-accent='electric']:not([data-theme='dark']) {
+  --accent: #2a5ff0;
+  --accent-2: #0bb5d8;
+  --accent-fill: #2a5ff0;
+  --accent-gradient: linear-gradient(135deg, #4f8cff 0%, #2a5ff0 50%, #1c3fcf 100%);
+  --accent-text: #1f4fe0;
+  --on-accent: #ffffff;
+}
+[data-theme='light'][data-accent='volt'],
+[data-theme='light'] [data-accent='volt']:not([data-theme='dark']) {
+  --accent: #5f8a00;
+  --accent-2: #12a77a;
+  --accent-fill: #b6e325;
+  --accent-gradient: linear-gradient(135deg, #e2ff7a 0%, #b6e325 50%, #7fae0c 100%);
+  --accent-text: #4d6b00;
+  --on-accent: #141c00;
+}
+[data-theme='light'][data-accent='blaze'],
+[data-theme='light'] [data-accent='blaze']:not([data-theme='dark']) {
+  --accent: #e2531f;
+  --accent-2: #f0a020;
+  --accent-fill: #f45a2a;
+  --accent-gradient: linear-gradient(135deg, #ffa77c 0%, #f45a2a 50%, #c63a12 100%);
+  --accent-text: #c2410c;
+  --on-accent: #1f0800;
+}
+[data-theme='light'][data-accent='emerald'],
+[data-theme='light'] [data-accent='emerald']:not([data-theme='dark']) {
+  --accent: #0b8a5f;
+  --accent-2: #0bb5d8;
+  --accent-fill: #08805a;
+  --accent-gradient: linear-gradient(135deg, #1fa877 0%, #08805a 50%, #06623f 100%);
+  --accent-text: #0b7a55;
+  --on-accent: #ffffff;
+}
+[data-theme='light'][data-accent='violet'],
+[data-theme='light'] [data-accent='violet']:not([data-theme='dark']) {
+  --accent: #6d4aea;
+  --accent-2: #d946a8;
+  --accent-fill: #6d4aea;
+  --accent-gradient: linear-gradient(135deg, #8f72ff 0%, #6d4aea 50%, #4f2fcf 100%);
+  --accent-text: #5b36d6;
+  --on-accent: #ffffff;
+}
+[data-theme='light'][data-accent='rose'],
+[data-theme='light'] [data-accent='rose']:not([data-theme='dark']) {
+  --accent: #d02f65;
+  --accent-2: #f08a4b;
+  --accent-fill: #d02f65;
+  --accent-gradient: linear-gradient(135deg, #e5507f 0%, #d02f65 50%, #a3164a 100%);
+  --accent-text: #c0245a;
+  --on-accent: #ffffff;
+}
+
+/* ---------- 3. Derived ----------
+ * Declared wherever a theme or accent is, because a custom property is computed where it's
+ * declared: a preview card has to mix its own accent, not inherit the page's mix. */
+
+:root,
+[data-scheme],
+[data-accent] {
+  --accent-soft: color-mix(in srgb, var(--accent) 16%, transparent);
+  --accent-ring: color-mix(in srgb, var(--accent) 55%, transparent);
+  --accent-bloom: color-mix(in srgb, var(--accent-fill) 30%, transparent);
+  --danger-soft: color-mix(in srgb, var(--danger) 14%, transparent);
+  --warn-soft: color-mix(in srgb, var(--warn) 14%, transparent);
+  --success-soft: color-mix(in srgb, var(--success) 14%, transparent);
+  --pr-soft: color-mix(in srgb, var(--pr) 16%, transparent);
+
+  /* The page: the accent glowing in from the top corner, its companion from the side and foot.
+     Fixed behind the scrolling content, so glass passing over it changes tint. */
+  --app-bg:
+    radial-gradient(ellipse 100% 60% at 0% -10%, color-mix(in srgb, var(--accent) var(--glow), transparent), transparent 70%),
+    radial-gradient(ellipse 70% 40% at 100% 38%, color-mix(in srgb, var(--accent-2) calc(var(--glow) * 0.4), transparent), transparent 70%),
+    radial-gradient(
+      ellipse 90% 55% at 100% 110%,
+      color-mix(in srgb, var(--accent-2) calc(var(--glow) * 0.7), transparent),
+      transparent 70%
+    ),
+    linear-gradient(180deg, var(--bg-top), var(--bg) 60%);
+
+  /* Glass is lit by the accent, never plain white. */
+  --glass-light: color-mix(in oklab, var(--accent) var(--glass-light-tint), var(--glass-light-base));
+  --glass-control: color-mix(in srgb, var(--glass-light) var(--glass-control-pct), transparent);
+  --glass-press: color-mix(in srgb, var(--glass-light) var(--glass-press-pct), transparent);
+  --glass-highlight: color-mix(in srgb, var(--glass-light) var(--glass-highlight-pct), transparent);
+  --glass-sheen: color-mix(in srgb, var(--glass-light) var(--glass-sheen-pct), transparent);
+  --glass-glint: color-mix(in srgb, var(--glass-light) var(--glass-glint-pct), transparent);
+  --glass-edge: color-mix(
+    in srgb,
+    color-mix(in oklab, var(--accent) var(--glass-edge-tint), var(--glass-edge-base)) var(--glass-edge-pct),
+    transparent
+  );
+  /* Accent-filled glass is lit by a paler accent. */
+  --glass-tint-highlight: color-mix(in srgb, color-mix(in oklab, var(--accent-fill) 35%, white) 60%, transparent);
+  --glass-tint-sheen: color-mix(in srgb, color-mix(in oklab, var(--accent-fill) 45%, white) 28%, transparent);
+  --glass-tint-shade: rgb(0 0 0 / 0.16);
+
+  /* Activity heatmap: one hue, from the surface up to the accent. */
+  --heat-0: var(--surface-2);
+  --heat-1: color-mix(in oklab, var(--accent) 28%, var(--surface-2));
+  --heat-2: color-mix(in oklab, var(--accent) 50%, var(--surface-2));
+  --heat-3: color-mix(in oklab, var(--accent) 75%, var(--surface-2));
+  --heat-4: var(--accent);
+}
+
+/* ---------- 4. Solid ---------- */
+
+[data-glass='off'],
+[data-glass='off'] :is([data-scheme], [data-accent]) {
+  --card-fill: var(--surface);
+  --glass-fill: var(--surface);
+  --glass-panel: var(--surface);
+  --glass-control: var(--surface-2);
+  --glass-press: var(--surface-3);
+  --glass-edge: var(--border-strong);
+  --glass-highlight: transparent;
+  --glass-sheen: transparent;
+  --glass-glint: transparent;
+  --glass-shade: transparent;
+  --glass-tint-highlight: transparent;
+  --glass-tint-sheen: transparent;
+  --glass-backdrop: none;
+  --glass-text-top: var(--text);
+  --glass-text-bottom: var(--text);
+}
+
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  :root,
+  [data-scheme],
+  [data-accent] {
+    --card-fill: var(--surface);
+    --glass-fill: var(--surface);
+    --glass-panel: var(--surface);
+    --glass-control: var(--surface-2);
+    --glass-press: var(--surface-3);
+    --glass-edge: var(--border-strong);
+    --glass-highlight: transparent;
+    --glass-sheen: transparent;
+    --glass-glint: transparent;
+    --glass-shade: transparent;
+    --glass-tint-highlight: transparent;
+    --glass-tint-sheen: transparent;
+    --glass-backdrop: none;
+    --glass-text-top: var(--text);
+    --glass-text-bottom: var(--text);
+  }
+}

@@ -1,0 +1,203 @@
+/*
+ * Liquid glass. Each material is a stack of layers: a sheen fading down from the top edge, a fill,
+ * a 1px highlight along the top, a 1px shade along the foot and a shadow. Only fixed chrome blurs
+ * what's behind it (surface, panel); everything else is lit the same way without a blur, over the
+ * ambient background. In the components layer so any utility passed to a component wins.
+ *
+ * A press lights the glass where the finger is (--gx/--gy and data-pressed, set by
+ * src/lib/pressGlint.ts); hover does the same only where there is a real pointer.
+ */
+
+@layer components {
+  /* Floating chrome: tab bar, bottom bars, status-bar veil. */
+  .glass-surface {
+    border-color: var(--glass-edge);
+    background:
+      linear-gradient(135deg, var(--glass-sheen), transparent 40%),
+      linear-gradient(180deg, var(--glass-sheen), transparent 55%),
+      var(--glass-fill);
+    box-shadow:
+      inset 0 1px 0 var(--glass-highlight),
+      inset 0 -1px 0 var(--glass-shade),
+      var(--glass-shadow);
+    -webkit-backdrop-filter: var(--glass-backdrop);
+    backdrop-filter: var(--glass-backdrop);
+  }
+
+  /* Thicker glass for what's read at length: sheets, toasts. */
+  .glass-panel {
+    border-color: var(--glass-edge);
+    background:
+      linear-gradient(135deg, var(--glass-sheen), transparent 35%),
+      linear-gradient(180deg, var(--glass-sheen), transparent 40%),
+      var(--glass-panel);
+    box-shadow:
+      inset 0 1px 0 var(--glass-highlight),
+      var(--glass-shadow);
+    -webkit-backdrop-filter: var(--glass-backdrop);
+    backdrop-filter: var(--glass-backdrop);
+  }
+
+  /* A diagonal sheen from the top-left corner on top of the vertical one: the "liquid" catch
+     of light that makes it read as a curved surface. */
+  .glass-card {
+    border: 1px solid var(--glass-edge);
+    background:
+      linear-gradient(135deg, var(--glass-sheen), transparent 38%),
+      linear-gradient(180deg, var(--glass-sheen), transparent 55%),
+      var(--card-fill);
+    box-shadow:
+      inset 0 1px 0 var(--glass-highlight),
+      inset 0 -1px 0 var(--glass-shade),
+      var(--elev-card);
+  }
+
+  .glass-control,
+  .glass-tint,
+  .glass-card:where([data-interactive]) {
+    transition-property: background-position, box-shadow, border-color, color, opacity, scale, transform;
+    transition-duration: var(--dur-fast);
+    transition-timing-function: var(--ease-smooth);
+  }
+
+  .glass-card:where([data-interactive]):where(:active, [data-pressed]) {
+    background:
+      radial-gradient(circle at var(--gx, 50%) var(--gy, 0%), var(--glass-glint), transparent 70%),
+      linear-gradient(135deg, var(--glass-sheen), transparent 38%),
+      linear-gradient(180deg, var(--glass-sheen), transparent 55%),
+      var(--card-fill);
+  }
+
+  /* Buttons, chips and tracks: glass set on the page, no blur of its own. */
+  .glass-control {
+    border: 1px solid var(--glass-edge);
+    background:
+      linear-gradient(180deg, var(--glass-sheen), transparent 60%),
+      var(--glass-control);
+    box-shadow:
+      inset 0 1px 0 var(--glass-highlight),
+      inset 0 -1px 0 var(--glass-shade),
+      var(--elev-sm);
+  }
+  .glass-control:where(:active, [data-pressed]):not(:disabled) {
+    background:
+      radial-gradient(circle at var(--gx, 50%) var(--gy, 0%), var(--glass-glint), transparent 70%),
+      linear-gradient(180deg, var(--glass-sheen), transparent 60%),
+      var(--glass-press);
+  }
+
+  /* The main action and what's chosen: the accent's gradient, lit as glass. The gradient is
+     larger than the button and slides across it when pressed. */
+  .glass-tint {
+    color: var(--on-accent);
+    background:
+      linear-gradient(180deg, var(--glass-tint-sheen), transparent 52%),
+      var(--accent-gradient);
+    background-size:
+      100% 100%,
+      140% 140%;
+    background-position:
+      0 0,
+      0% 0%;
+    box-shadow:
+      inset 0 1px 0 var(--glass-tint-highlight),
+      inset 0 -1px 1px var(--glass-tint-shade),
+      inset 0 0 0 1px color-mix(in srgb, var(--accent-fill) 40%, transparent),
+      0 6px 18px var(--accent-bloom);
+    /* The gradient slides slower than the press settles. */
+    transition-duration: var(--dur-slow), var(--dur), var(--dur-fast), var(--dur-fast), var(--dur-fast), var(--dur-fast),
+      var(--dur-fast);
+  }
+  .glass-tint:where(:active, [data-pressed]):not(:disabled) {
+    background-position:
+      0 0,
+      100% 100%;
+    box-shadow:
+      inset 0 1px 0 var(--glass-tint-highlight),
+      inset 0 -1px 1px var(--glass-tint-shade),
+      inset 0 0 0 1px color-mix(in srgb, var(--accent-fill) 40%, transparent),
+      0 3px 10px var(--accent-bloom);
+  }
+
+  @media (hover: hover) {
+    .glass-control:hover:not(:disabled) {
+      background:
+        radial-gradient(circle at var(--gx, 50%) var(--gy, 0%), var(--glass-glint), transparent 70%),
+        linear-gradient(180deg, var(--glass-sheen), transparent 60%),
+        var(--glass-press);
+    }
+    .glass-tint:hover:not(:disabled) {
+      background-position:
+        0 0,
+        100% 100%;
+      box-shadow:
+        inset 0 1px 0 var(--glass-tint-highlight),
+        inset 0 -1px 1px var(--glass-tint-shade),
+        inset 0 0 0 1px color-mix(in srgb, var(--accent-fill) 40%, transparent),
+        0 8px 26px var(--accent-bloom);
+    }
+    .glass-card:where([data-interactive]):hover {
+      border-color: var(--accent-ring);
+    }
+  }
+
+  /* A field is glass set into the page: shaded along its top, lit along its foot. */
+  .glass-field {
+    border: 1px solid var(--glass-edge);
+    background:
+      linear-gradient(180deg, var(--glass-shade), transparent 45%),
+      var(--field-fill);
+    box-shadow:
+      inset 0 1px 2px var(--glass-shade),
+      0 1px 0 var(--glass-highlight);
+    transition:
+      border-color var(--dur-fast) var(--ease-smooth),
+      box-shadow var(--dur-fast) var(--ease-smooth);
+  }
+  .glass-field:where(:focus, :focus-within) {
+    border-color: var(--accent-ring);
+    outline: none;
+    box-shadow:
+      inset 0 1px 2px var(--glass-shade),
+      0 0 0 4px var(--accent-soft);
+  }
+
+  /* The chosen segment or tab: a lens of brighter glass. */
+  .glass-lens {
+    background:
+      linear-gradient(180deg, var(--glass-sheen), transparent 60%),
+      var(--glass-press);
+    box-shadow:
+      inset 0 1px 0 var(--glass-highlight),
+      inset 0 -1px 0 var(--glass-shade),
+      0 0 0 1px var(--glass-edge),
+      var(--elev-sm);
+  }
+
+  /* Large display lettering only. */
+  .glass-text {
+    background-image: linear-gradient(
+      180deg,
+      var(--glass-text-top) 0%,
+      var(--glass-text-top) 28%,
+      var(--glass-text-bottom) 78%,
+      var(--glass-text-top) 100%
+    );
+    background-size: 100% 1lh;
+    background-repeat: repeat-y;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  @supports not ((background-clip: text) or (-webkit-background-clip: text)) {
+    .glass-text {
+      color: var(--text);
+    }
+  }
+  @media (forced-colors: active) {
+    .glass-text {
+      background: none;
+      color: CanvasText;
+    }
+  }
+}

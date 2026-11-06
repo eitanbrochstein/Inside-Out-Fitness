@@ -1,0 +1,51 @@
+/*
+ * Page changes use the View Transitions API. The page column (Page, view-transition-name: page)
+ * fades out and the new one rises in; everything else, the floating bars included, cross-fades as
+ * part of the root, so the bars hold still (and keep their blur, which a named snapshot would lose).
+ * A theme change only cross-fades.
+ */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 180ms;
+}
+
+::view-transition-group(page) {
+  animation-duration: 0s;
+}
+::view-transition-old(page) {
+  animation: vt-out 140ms var(--ease-smooth) both;
+}
+::view-transition-new(page) {
+  animation: vt-rise 280ms var(--ease-smooth) both;
+}
+:root[data-vt='theme']::view-transition-old(page) {
+  animation: vt-out 250ms linear both;
+}
+:root[data-vt='theme']::view-transition-new(page) {
+  animation: vt-in 250ms linear both;
+}
+
+@keyframes vt-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes vt-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes vt-rise {
+  from {
+    opacity: 0;
+    translate: 0 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}

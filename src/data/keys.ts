@@ -1,0 +1,28 @@
+export const keys = {
+  profile: (uid: string) => ['profile', uid] as const,
+  exercises: (uid: string) => ['exercises', uid] as const,
+  maxes: (owner: string) => ['maxes', owner] as const,
+  workouts: (owner: string) => ['workouts', owner] as const,
+  workoutList: (owner: string, scope: 'current' | 'history') => ['workouts', owner, scope] as const,
+  calendar: (owner: string, from: string, to: string) => ['workouts', owner, 'calendar', from, to] as const,
+  workout: (id: string) => ['workout', id] as const,
+  stats: (owner: string) => ['stats', owner] as const,
+  workoutStats: (owner: string, workoutId: string, exerciseIds: string[]) => ['stats', owner, workoutId, exerciseIds] as const,
+  allStats: (owner: string) => ['stats', owner, 'all'] as const,
+  setLog: (owner: string, exerciseId: string) => ['stats', owner, 'log', exerciseId] as const,
+  summary: (owner: string, weeks: number) => ['stats', owner, 'summary', weeks] as const,
+  records: (owner: string, scope: string) => ['stats', owner, 'records', scope] as const,
+  weeklyGoal: (owner: string) => ['profile', owner, 'weekly_goal'] as const,
+  // coaching
+  clients: (uid: string) => ['coaching', uid, 'clients'] as const,
+  coaches: (uid: string) => ['coaching', uid, 'coaches'] as const,
+  invites: (uid: string) => ['coaching', uid, 'invites'] as const,
+  templates: (uid: string) => ['workouts', uid, 'templates'] as const,
+  // Programs and runs sit under 'workouts' too: anything that refreshes someone's workouts refreshes them.
+  programs: (uid: string) => ['workouts', uid, 'programs'] as const,
+  program: (uid: string, id: string) => ['workouts', uid, 'program', id] as const,
+  runs: (owner: string) => ['workouts', owner, 'runs'] as const,
+  clientActivity: (uid: string, clientIds: string[]) => ['coaching', uid, 'activity', clientIds] as const,
+  clientMaxes: (uid: string, clientIds: string[]) => ['coaching', uid, 'maxes', clientIds] as const,
+  comments: (workoutId: string) => ['comments', workoutId] as const,
+}

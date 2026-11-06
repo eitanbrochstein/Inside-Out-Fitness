@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#070b18" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Inside Out" />
+    <meta name="description" content="A minimal strength-training journal." />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
+    <title>Inside Out Training</title>
+    <script>
+      // Paints the saved theme before the app loads. Mirrors THEMES and SYSTEM_THEMES in
+      // src/lib/theme.ts (themes.test.ts keeps them in step).
+      ;(function () {
+        var THEMES = {
+          midnight: ['dark', '#070b18', 'electric'],
+          carbon: ['dark', '#050506', 'volt'],
+          ember: ['dark', '#0d0806', 'blaze'],
+          daylight: ['light', '#eef2f9', 'electric'],
+          chalk: ['light', '#f5f2ec', 'emerald'],
+        }
+        var SYSTEM = { dark: 'midnight', light: 'daylight' }
+        var ACCENTS = ['electric', 'volt', 'blaze', 'emerald', 'violet', 'rose']
+        var a = {}
+        try {
+          a = JSON.parse(localStorage.getItem('appearance') || 'null') || {}
+          if (!a.theme) {
+            var legacy = localStorage.getItem('theme')
+            a.theme = legacy === 'dark' ? 'midnight' : legacy === 'light' ? 'daylight' : legacy
+          }
+        } catch (e) {}
+        var id = a.theme === 'system' ? SYSTEM[matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'] : a.theme
+        if (!THEMES[id]) id = 'midnight'
+        var t = THEMES[id]
+        var root = document.documentElement
+        root.dataset.theme = t[0]
+        root.dataset.scheme = id
+        root.dataset.accent = ACCENTS.indexOf(a.accent) >= 0 ? a.accent : t[2]
+        root.dataset.glass = a.glass === false ? 'off' : 'on'
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', t[1])
+        document
+          .querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
+          .setAttribute('content', t[0] === 'dark' ? 'black-translucent' : 'default')
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
