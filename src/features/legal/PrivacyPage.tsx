@@ -6,7 +6,7 @@ import { PageHeader } from '@/ui/PageHeader'
 import { StatusBarVeil } from '@/ui/StatusBarVeil'
 
 // Both app stores expect a way to reach you. The draft notice below shows until this is filled in.
-const CONTACT_EMAIL = ''
+const CONTACT_EMAIL = 'eitantravels25@gmail.com'
 const UPDATED = '6 November 2026'
 
 function Section({ id, title, children }: { id?: string; title: string; children: ReactNode }) {
