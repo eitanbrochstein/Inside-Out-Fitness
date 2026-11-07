@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import type { Invite } from '@/data/types'
 import { inviteLink, useClientActivity, useClients, useCreateInvite, useInvites, useRevokeInvite } from '@/data/useCoaching'
 import { formatDay, formatTimestamp, lowerRelative } from '@/lib/dates'
+import { canShare, copyText, shareLink } from '@/lib/native'
 import { Avatar } from '@/ui/Avatar'
 import { Button } from '@/ui/Button'
 import { EmptyState } from '@/ui/EmptyState'
@@ -113,7 +114,7 @@ function CopyButton({ text }: { text: string }) {
       size="md"
       onClick={async () => {
         try {
-          await navigator.clipboard.writeText(text)
+          await copyText(text)
           setCopied(true)
           window.setTimeout(() => setCopied(false), 1500)
         } catch {
@@ -142,7 +143,7 @@ function InviteSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (ope
 
   const share = async () => {
     try {
-      await navigator.share({ title: 'Join me on Inside Out Training', text: 'Use this link to connect your training journal with me:', url: link })
+      await shareLink({ title: 'Join me on Inside Out Training', text: 'Use this link to connect your training journal with me:', url: link })
     } catch {
       // dismissed
     }
@@ -163,7 +164,7 @@ function InviteSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (ope
         <div className="flex flex-col gap-3 pt-1 pb-3">
           <div className="glass-field rounded-field px-3.5 py-3 text-callout break-all select-all">{link}</div>
           <p className="text-subhead text-muted">
-            Or have them enter code <span className="font-mono font-semibold tracking-wider text-text">{invite.code}</span> at /join.
+            Or have them enter code <span className="font-mono font-semibold tracking-wider text-text">{invite.code}</span> under Settings, Join a coach with a code.
           </p>
           <div className="flex gap-3">
             <Button
@@ -172,7 +173,7 @@ function InviteSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (ope
               className="flex-1"
               onClick={async () => {
                 try {
-                  await navigator.clipboard.writeText(link)
+                  await copyText(link)
                   toast.success('Link copied')
                 } catch {
                   toast.error("Couldn't copy. Select the link above instead.")
@@ -181,7 +182,7 @@ function InviteSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (ope
             >
               <Copy className="size-[18px]" /> Copy link
             </Button>
-            {'share' in navigator && (
+            {canShare() && (
               <Button size="lg" className="flex-1" onClick={share}>
                 <Share className="size-[18px]" /> Share
               </Button>

@@ -346,6 +346,9 @@ isOneToOne: false
 "copy_workout":
 { Args: { "p_kind"?: string,"p_new_id"?: string,"p_owner"?: string,"p_scheduled_for"?: string,"p_source": string }; Returns: string
                            },
+"delete_my_account":
+{ Args: Record<PropertyKey, never>; Returns: undefined
+                           },
 "duplicate_block":
 { Args: { "p_block": string,"p_new_id"?: string,"p_set_ids"?: (string)[] }; Returns: string
                            },

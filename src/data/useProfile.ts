@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { useUserId } from '@/features/auth/AuthProvider'
 import type { Rounding, Unit } from '@/lib/load'
 import { must, supabase } from '@/lib/supabase'
@@ -24,6 +25,20 @@ export function useUpdateProfile() {
       qc.setQueryData<Profile>(keys.profile(uid), (p) => p && { ...p, ...patch })
     },
     onSettled: () => qc.invalidateQueries({ queryKey: keys.profile(uid) }),
+  })
+}
+
+/** Permanently deletes the signed-in account. Signing out afterwards takes the app back to the login page. */
+export function useDeleteAccount() {
+  return useMutation({
+    mutationFn: async () => {
+      must(await supabase.rpc('delete_my_account'))
+      toast('Your account has been deleted')
+      // Local only: the session died with the account, so there's nothing left to end on the server.
+      await supabase.auth.signOut({ scope: 'local' })
+    },
+    retry: false,
+    meta: { quiet: true },
   })
 }
 

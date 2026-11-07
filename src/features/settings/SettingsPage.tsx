@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { LogOut, Minus, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { useCoaches, useEndCoaching } from '@/data/useCoaching'
-import { useUpdateProfile, useProfile } from '@/data/useProfile'
+import { useDeleteAccount, useUpdateProfile, useProfile } from '@/data/useProfile'
 import { defaultIncrement, type RoundingMode, type Unit } from '@/lib/load'
 import { supabase } from '@/lib/supabase'
 import { useDraft } from '@/lib/useAutosave'
@@ -16,6 +16,7 @@ import { Page } from '@/ui/Page'
 import { PageHeader } from '@/ui/PageHeader'
 import { SectionLabel } from '@/ui/SectionLabel'
 import { SegmentedControl } from '@/ui/SegmentedControl'
+import { Sheet } from '@/ui/Sheet'
 import { Switch } from '@/ui/Switch'
 import { TextField } from '@/ui/TextField'
 import { useAuth, useUserId } from '../auth/AuthProvider'
@@ -149,10 +150,16 @@ export function SettingsPage() {
 
       <YourCoaches />
 
+      <SectionLabel className="mt-7 mb-2 px-1">About</SectionLabel>
+      <Card className="overflow-hidden">
+        <ListRow to="/privacy" title="Privacy policy" trailing="chevron" />
+      </Card>
+
       <Button variant="danger-soft" size="lg" block className="mt-8" onClick={() => supabase.auth.signOut()}>
         <LogOut className="size-5" />
         Sign out
       </Button>
+      <DeleteAccount isCoach={profile.is_coach} />
     </Page>
   )
 }
@@ -213,6 +220,53 @@ function YourCoaches() {
           </div>
         ))}
       </Card>
+    </>
+  )
+}
+
+function DeleteAccount({ isCoach }: { isCoach: boolean }) {
+  const [open, setOpen] = useState(false)
+  const remove = useDeleteAccount()
+
+  return (
+    <>
+      <Button
+        variant="ghost"
+        size="lg"
+        block
+        className="mt-2 text-danger"
+        onClick={() => {
+          remove.reset()
+          setOpen(true)
+        }}
+      >
+        Delete account
+      </Button>
+      <Sheet
+        open={open}
+        onOpenChange={(o) => !remove.isPending && setOpen(o)}
+        title="Delete your account?"
+        description="This permanently deletes your login, workouts, maxes, progress and settings. It can't be undone."
+      >
+        <div className="flex flex-col gap-2 pt-1 pb-2">
+          {isCoach && (
+            <p className="pb-2 text-callout text-muted">
+              Your templates, programs and comments are deleted too. Clients keep the workouts you've already assigned.
+            </p>
+          )}
+          {remove.isError && (
+            <p role="alert" className="pb-2 text-subhead text-danger">
+              Couldn't delete your account. Check your connection and try again.
+            </p>
+          )}
+          <Button size="lg" variant="danger" block loading={remove.isPending} onClick={() => remove.mutate()}>
+            Delete my account
+          </Button>
+          <Button size="lg" variant="ghost" block disabled={remove.isPending} onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+        </div>
+      </Sheet>
     </>
   )
 }

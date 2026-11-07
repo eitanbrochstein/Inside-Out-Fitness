@@ -1,9 +1,18 @@
 import { useEffect } from 'react'
+import { KeepAwake } from '@capacitor-community/keep-awake'
+import { isNative } from './native'
 
 /** Keeps the screen awake while `active` (e.g. during Train mode). */
 export function useWakeLock(active: boolean) {
   useEffect(() => {
-    if (!active || !('wakeLock' in navigator)) return
+    if (!active) return
+    if (isNative) {
+      KeepAwake.keepAwake().catch(() => {})
+      return () => {
+        KeepAwake.allowSleep().catch(() => {})
+      }
+    }
+    if (!('wakeLock' in navigator)) return
     let lock: WakeLockSentinel | null = null
     let cancelled = false
     const acquire = async () => {

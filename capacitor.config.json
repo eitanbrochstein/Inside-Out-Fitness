@@ -1,0 +1,13 @@
+{
+  "appId": "com.insideouttraining.app",
+  "appName": "Inside Out",
+  "webDir": "dist",
+  "backgroundColor": "#070b18",
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "native",
+      "style": "DARK",
+      "initialViewportFitValueHint": "cover"
+    }
+  }
+}

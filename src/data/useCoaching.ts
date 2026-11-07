@@ -3,6 +3,7 @@ import { useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useUserId } from '@/features/auth/AuthProvider'
 import type { Rounding, Unit } from '@/lib/load'
+import { isNative } from '@/lib/native'
 import { must, supabase } from '@/lib/supabase'
 import { keys } from './keys'
 import type { Invite, MaxKind, TrainingMax, WorkoutComment } from './types'
@@ -123,7 +124,9 @@ export function useRevokeInvite() {
   })
 }
 
-export const inviteLink = (code: string) => `${window.location.origin}/join/${code}`
+/** The apps have no web address of their own, so their links point at the website (see vite.config.ts). */
+export const inviteLink = (code: string) =>
+  new URL(`/join/${code}`, isNative ? import.meta.env.VITE_APP_URL : window.location.origin).href
 
 export function useInvitePreview(code: string) {
   return useQuery({

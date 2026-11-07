@@ -45,9 +45,12 @@ To try it on a phone on the same Wi-Fi, run `pnpm dev --host` and set `VITE_SUPA
 | `pnpm test` | Unit tests: load math, summaries, progress, insights and calendar helpers, theme tokens and contrast |
 | `pnpm typecheck` / `pnpm lint` | TypeScript / oxlint |
 | `pnpm db:reset` | Rebuild the local database from migrations + `supabase/seed.sql` |
-| `pnpm db:test` | pgTAP tests: owner-only data, coach access and planning, assignment, programs, training totals and records (`supabase/tests`) |
+| `pnpm db:test` | pgTAP tests: owner-only data, coach access and planning, assignment, programs, training totals and records, account deletion (`supabase/tests`) |
 | `pnpm db:types` | Regenerate `src/lib/database.types.ts` after a migration |
 | `pnpm icons` | Regenerate PWA icons from `public/favicon.svg` |
+| `pnpm native:sync` | Production build, copied into the iOS and Android projects |
+| `pnpm native:ios` / `pnpm native:android` | `native:sync`, then open the project in Xcode / Android Studio |
+| `pnpm native:icons` | Regenerate the native app icons and splash screens from `assets/` |
 
 ## How it works
 
@@ -79,13 +82,14 @@ Components use the semantic names only (`bg-surface`, `text-muted`, `text-accent
 ```
 supabase/migrations   schema, functions (reorder, duplicate, copy, finish, stats, training summary, records), exercise library, programs, coach planning
 supabase/seed.sql     local demo users, history, saved workouts and programs (never pushed)
-supabase/tests        pgTAP tests (owner-only, coaching, coach planning, programs, insights, appearance)
-src/lib               load math, summaries, progress and calendar helpers, Supabase client
+supabase/tests        pgTAP tests (owner-only, coaching, coach planning, programs, insights, appearance, account deletion)
+src/lib               load math, summaries, progress and calendar helpers, Supabase client, native.ts (everything that differs in the apps)
 src/data              TanStack Query hooks (one per resource; useWorkout holds all block/set mutations)
 src/styles            design tokens, themes, glass materials (see "Design system")
 src/ui                design-system primitives; src/ui/charts holds the rings, heatmap and chart kit
-src/features          pages: home, workouts, workout (editor, train mode, templates, coach view), plan (calendar, add sheets), library (saved workouts, programs), exercises, progress, settings, coaching
+src/features          pages: home, workouts, workout (editor, train mode, templates, coach view), plan (calendar, add sheets), library (saved workouts, programs), exercises, progress, settings, coaching, legal (privacy policy)
 sw/sw.ts              service worker (app shell only; data is never cached)
+ios, android          native app projects (Capacitor); assets holds the sources for their icons and splash screens
 ```
 
 ## Deploying
@@ -96,6 +100,34 @@ sw/sw.ts              service worker (app shell only; data is never cached)
 4. On an iPhone, open the site in Safari → Share → **Add to Home Screen**. The installed app keeps its own sign-in.
 
 Free Supabase projects pause after a week without use and have no automatic backups. Run `pnpm exec supabase db dump` now and then.
+
+## Native apps
+
+The iOS and Android apps are this same web app inside a native shell ([Capacitor](https://capacitorjs.com)). Web code changes go in `src/`, and `pnpm native:sync` copies them into `ios/` and `android/`.
+
+**Setup:** in `.env.production.local`, set `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` and `VITE_APP_URL` (the live website's address, which invite links point at). `native:sync` refuses to build unless both URLs are `https://`, so a store build can't ship with dead invite links or pointing at a local database.
+
+**What differs in the apps** (all in `src/lib/native.ts`):
+
+- The share sheet, clipboard, haptics, keep-awake and status bar use native plugins.
+- The sign-in is kept in native storage, not localStorage, which a phone low on space can clear.
+- There's no service worker or update prompt. Updates come through the stores, so people can be on an older version for a while: **database changes must keep working for the app versions still in use.**
+- Android's back button closes an open sheet, then goes back a page, then leaves the app.
+
+**Invite links** open the website, where a client can accept and then use the app. In the app, Settings → Join a coach with a code does the same. Opening links straight in the app needs Universal Links and App Links, which aren't set up.
+
+**Limits worth knowing:**
+
+- The app id `com.insideouttraining.app` (`capacitor.config.json`) can't change once an app is published.
+- The home screen shows the short name "Inside Out". The store listing's name is set in App Store Connect and Play Console.
+- The minimum iOS version is 16.4, because Tailwind v4 needs Safari 16.4.
+- Before Chromium 140, Android's web view can't draw behind the system bars, so older phones show dark bars above and below the page, even on a light theme.
+
+**Before submitting:** fill in `CONTACT_EMAIL` in `src/features/legal/PrivacyPage.tsx` and review that policy. Google Play's deletion link is `<your site>/privacy#delete-account`.
+
+## Account deletion
+
+Settings → Delete account calls `delete_my_account` (`…_delete_account.sql`), which removes the login and everything that cascades from it. Clients keep the workouts a coach assigned. A client's workouts and maxes can point at the coach's custom exercises, so each client gets their own copy of those first, or keeps using one they already have by that name. `delete_account.test.sql` covers this.
 
 ## Planning
 

@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Navigate, useLocation } from 'react-router'
+import { Link, Navigate, useLocation } from 'react-router'
 import { supabase } from '@/lib/supabase'
 import { Aurora } from '@/ui/Aurora'
 import { Button } from '@/ui/Button'
@@ -86,6 +86,9 @@ export function LoginPage() {
           </Button>
         </form>
       </Card>
+      <Link to="/privacy" viewTransition className="mt-5 self-center text-footnote text-muted">
+        Privacy policy
+      </Link>
     </Page>
   )
 }

@@ -1,3 +1,5 @@
+import { syncStatusBar } from './native'
+
 /**
  * Named themes and accents. Each one's colours live in src/styles/themes.css; the script in
  * index.html repeats the id → mode/colour/accent map so the right theme paints before React loads
@@ -67,7 +69,7 @@ function setMeta(name: string, content: string) {
 
 /**
  * Puts an appearance on <html>: the attributes themes.css keys on, the browser's chrome colour and
- * the iOS status bar (read at launch, so a change there shows on the next cold start).
+ * the status bar (an installed web app reads that at launch, so a change there shows on its next cold start).
  * `animate` cross-fades the change where the browser can; `onApply` runs with it, inside the fade.
  */
 export function applyAppearance(appearance: Appearance, { animate = false, onApply }: { animate?: boolean; onApply?: () => void } = {}) {
@@ -80,6 +82,7 @@ export function applyAppearance(appearance: Appearance, { animate = false, onApp
     root.dataset.glass = appearance.glass ? 'on' : 'off'
     setMeta('theme-color', theme.themeColor)
     setMeta('apple-mobile-web-app-status-bar-style', theme.mode === 'dark' ? 'black-translucent' : 'default')
+    syncStatusBar()
     onApply?.()
   }
   const unchanged =

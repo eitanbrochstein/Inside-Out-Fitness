@@ -12,6 +12,7 @@ import { RequireAuth } from './features/auth/RequireAuth'
 import { ExerciseDetailPage } from './features/exercises/ExerciseDetailPage'
 import { ExercisesPage } from './features/exercises/ExercisesPage'
 import { HomePage } from './features/home/HomePage'
+import { PrivacyPage } from './features/legal/PrivacyPage'
 import { SettingsPage } from './features/settings/SettingsPage'
 import { ThemeSync } from './features/settings/ThemeSync'
 import { ProgramPage } from './features/library/ProgramPage'
@@ -42,6 +43,7 @@ function AppLayout() {
 
 export const router = createBrowserRouter([
   { path: '/login', Component: LoginPage },
+  { path: '/privacy', Component: PrivacyPage },
   {
     Component: RequireAuth,
     // Shown while a lazy route loads on a cold start.
