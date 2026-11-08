@@ -1,0 +1,24 @@
+<!doctype html>
+<!-- "Magic Link" template: the sign-in code for an existing account. Also pasted into the hosted
+     project under Authentication → Emails → Templates. -->
+<html lang="en">
+  <body style="margin:0;padding:0;background:#eef2f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0b1220;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef2f9;padding:32px 16px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:440px;background:#ffffff;border-radius:16px;padding:32px 28px;">
+            <tr>
+              <td>
+                <p style="margin:0 0 4px;font-size:13px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:#2a64f6;">Inside Out Training</p>
+                <h1 style="margin:0 0 12px;font-size:24px;line-height:1.25;font-weight:700;">Your sign-in code</h1>
+                <p style="margin:0 0 24px;font-size:16px;line-height:1.5;color:#3b4557;">Enter this code in the app to sign in:</p>
+                <p style="margin:0 0 24px;padding:16px 0;background:#eef2f9;border-radius:12px;text-align:center;font-size:34px;font-weight:700;letter-spacing:0.3em;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#0b1220;">{{ .Token }}</p>
+                <p style="margin:0;font-size:14px;line-height:1.5;color:#5b6577;">The code expires in 10 minutes. If you didn't try to sign in, you can ignore this email: no one can get in without the code.</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

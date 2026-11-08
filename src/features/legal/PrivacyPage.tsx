@@ -48,7 +48,7 @@ export function PrivacyPage() {
 
       <Section title="What we collect">
         <Bullets>
-          <li>Your email address and password, so you can sign in. Passwords are stored only in hashed form.</li>
+          <li>Your email address, so you can sign in. We email you a one-time code each time you sign in.</li>
           <li>Your name, if you add one.</li>
           <li>The training you enter: workouts, sets, weights, maxes, notes, comments and your settings.</li>
         </Bullets>

@@ -7,10 +7,12 @@ interface TextFieldProps extends ComponentProps<'input'> {
   error?: ReactNode
   leading?: ReactNode
   trailing?: ReactNode
+  /** Classes for the <input> itself; `className` styles the field around it. */
+  inputClassName?: string
 }
 
 /** A text input set into the page, with an optional label above and hint or error below. */
-export function TextField({ label, hint, error, leading, trailing, className, id, ...props }: TextFieldProps) {
+export function TextField({ label, hint, error, leading, trailing, className, inputClassName, id, ...props }: TextFieldProps) {
   const fallbackId = useId()
   const inputId = id ?? fallbackId
   const note = error ?? hint
@@ -26,7 +28,7 @@ export function TextField({ label, hint, error, leading, trailing, className, id
         <input
           id={inputId}
           aria-invalid={error ? true : undefined}
-          className="h-full min-w-0 flex-1 bg-transparent text-text outline-none"
+          className={cn('h-full min-w-0 flex-1 bg-transparent text-text outline-none', inputClassName)}
           {...props}
         />
         {trailing}

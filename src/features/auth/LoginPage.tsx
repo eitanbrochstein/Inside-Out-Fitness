@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
-import { Link, Navigate, useLocation } from 'react-router'
-import { supabase } from '@/lib/supabase'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router'
+import { authErrorMessage } from '@/lib/otp'
 import { Aurora } from '@/ui/Aurora'
 import { Button } from '@/ui/Button'
 import { Card } from '@/ui/Card'
@@ -9,28 +9,34 @@ import { Page } from '@/ui/Page'
 import { SegmentedControl } from '@/ui/SegmentedControl'
 import { TextField } from '@/ui/TextField'
 import { useAuth } from './AuthProvider'
+import { savePendingSignIn, sendCode, type AuthMode, type PendingSignIn } from './emailCode'
 
+/** /login: asks for an email and sends a 6-digit code, which /login/verify takes. */
 export function LoginPage() {
   const { session } = useAuth()
   const location = useLocation()
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const navigate = useNavigate()
+  // From RequireAuth ({ from }), or the code page's "Use a different email" (all three).
+  const state = location.state as { from?: string; email?: string; mode?: AuthMode } | null
+  const from = state?.from
+  const [mode, setMode] = useState<AuthMode>(state?.mode ?? 'signin')
+  const [email, setEmail] = useState(state?.email ?? '')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
-  if (session) return <Navigate to={(location.state as { from?: string } | null)?.from ?? '/'} replace />
+  if (session) return <Navigate to={from ?? '/'} replace />
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     setBusy(true)
     setError(null)
-    const { error } =
-      mode === 'signin'
-        ? await supabase.auth.signInWithPassword({ email, password })
-        : await supabase.auth.signUp({ email, password })
+    const address = email.trim()
+    const { error } = await sendCode(address, mode)
     setBusy(false)
-    if (error) setError(error.message)
+    if (error) return setError(authErrorMessage(error))
+    const pending: PendingSignIn = { email: address, mode, from, sentAt: Date.now() }
+    savePendingSignIn(pending)
+    navigate('/login/verify', { state: { pending }, viewTransition: true })
   }
 
   return (
@@ -66,24 +72,15 @@ export function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-          <TextField
-            type="password"
-            autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-            placeholder="Password"
-            aria-label="Password"
-            minLength={6}
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
           {error && (
             <p role="alert" className="px-1 text-subhead text-danger">
               {error}
             </p>
           )}
           <Button type="submit" size="lg" block loading={busy} className="mt-2">
-            {mode === 'signin' ? 'Sign in' : 'Create account'}
+            Email me a code
           </Button>
+          <p className="px-1 text-center text-footnote text-muted">We'll email you a 6-digit code. No password needed.</p>
         </form>
       </Card>
       <Link to="/privacy" viewTransition className="mt-5 self-center text-footnote text-muted">

@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate, Outlet, ScrollRestoration } from 'react-router'
 import { LoginPage } from './features/auth/LoginPage'
+import { VerifyPage } from './features/auth/VerifyPage'
 import { ActivityPage } from './features/coaching/ActivityPage'
 import { AssignPage } from './features/coaching/AssignPage'
 import { ClientPage } from './features/coaching/ClientPage'
@@ -43,6 +44,7 @@ function AppLayout() {
 
 export const router = createBrowserRouter([
   { path: '/login', Component: LoginPage },
+  { path: '/login/verify', Component: VerifyPage },
   { path: '/privacy', Component: PrivacyPage },
   {
     Component: RequireAuth,
