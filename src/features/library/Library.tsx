@@ -69,20 +69,19 @@ export function Library({ audience }: { audience: Audience }) {
 
   return (
     <div className="flex flex-col gap-6">
-      {blocks.length > 0 && (
-        <section aria-label="Programs">
-          <SectionLabel className="mb-2 px-1">Programs</SectionLabel>
-          <div className="flex flex-col gap-3">
-            {blocks.map((p, i) => (
-              <div key={p.id} className="animate-rise" style={riseDelay(i)}>
-                <ProgramRow program={p} runs={runs.data ?? []} />
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+      <section aria-label="Programs">
+        <SectionLabel className="mb-2 px-1">Programs</SectionLabel>
+        <div className="flex flex-col gap-3">
+          {blocks.map((p, i) => (
+            <div key={p.id} className="animate-rise" style={riseDelay(i)}>
+              <ProgramRow program={p} runs={runs.data ?? []} />
+            </div>
+          ))}
+          {blocks.length === 0 && <NewProgramCard onClick={newProgram} />}
+        </div>
+      </section>
       <section aria-label={audience === 'coach' ? 'Templates' : 'Workouts'}>
-        {blocks.length > 0 && <SectionLabel className="mb-2 px-1">{audience === 'coach' ? 'Templates' : 'Workouts'}</SectionLabel>}
+        <SectionLabel className="mb-2 px-1">{audience === 'coach' ? 'Templates' : 'Workouts'}</SectionLabel>
         {workouts.length ? (
           <div className="flex flex-col gap-3">
             {workouts.map((t, i) => (
@@ -98,6 +97,29 @@ export function Library({ audience }: { audience: Audience }) {
         )}
       </section>
     </div>
+  )
+}
+
+/** Where Programs would be, before there are any: what one is, and a way to start. */
+function NewProgramCard({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      data-interactive
+      className="glass-card flex w-full select-none items-center gap-3 rounded-card px-4 py-3.5 text-left active:scale-[0.98]"
+    >
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-tile bg-accent-soft text-accent-text">
+        <CalendarRange className="size-5" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-headline font-semibold">New program</span>
+        <span className="mt-0.5 block text-footnote text-muted">
+          Weeks of workouts to start on your plan. Or save weeks you've planned from the Plan's ⋯ menu.
+        </span>
+      </span>
+      <Plus className="size-[18px] shrink-0 text-faint" strokeWidth={2.4} />
+    </button>
   )
 }
 

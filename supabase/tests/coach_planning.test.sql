@@ -2,7 +2,7 @@
 -- never the log. Everything else of the client's stays read-only to them.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(31);
+select plan(37);
 
 -- C = coach, A and B = C's clients, D = another coach of A, S = stranger.
 insert into auth.users (instance_id, id, aud, role, email) values
@@ -83,6 +83,18 @@ select throws_ok($$ update public.workout_sets set actual_reps = 5 where block_i
 select throws_ok($$ insert into public.workout_sets (block_id, target_reps, completed_at) values (current_setting('test.b')::uuid, 5, now()) $$, '42501', null,
   'or add a set that''s already done');
 
+-- Timed sets and supersets are plan too; a logged time and the session's RPE are the client's.
+select isnt_empty($$ update public.workout_sets set target_seconds = 45 where block_id = current_setting('test.b')::uuid returning id $$,
+  'the coach plans a timed set');
+select isnt_empty($$ update public.workout_blocks set settings = '{"group": "g1", "measure": "sec"}' where id = current_setting('test.b')::uuid returning id $$,
+  'and pairs or times an exercise');
+select throws_ok($$ update public.workout_sets set actual_seconds = 40 where block_id = current_setting('test.b')::uuid $$, '42501', null,
+  'but cannot log a time');
+select throws_ok($$ insert into public.workout_sets (block_id, target_seconds, actual_seconds) values (current_setting('test.b')::uuid, 30, 30) $$, '42501', null,
+  'or add a set with a time logged');
+select throws_ok($$ update public.workouts set rpe = 8 where id = current_setting('test.w')::uuid $$, '42501', null,
+  'or rate the session');
+
 -- Not the client's own workouts, nor another coach's assignments.
 select is_empty($$ update public.workouts set title = 'x' where id = 'a0000000-0000-4000-8000-00000000000a' returning id $$,
   'the client''s own workouts stay read-only');
@@ -97,6 +109,7 @@ select pg_temp.as_user('aaaaaaaa-0000-4000-8000-0000000000a0');
 select isnt_empty($$ update public.workout_sets set actual_reps = 5, actual_weight_kg = 80, completed_at = now()
                     where block_id = current_setting('test.b')::uuid returning id $$, 'the client logs a set');
 update public.workouts set status = 'in_progress', started_at = now() where id = current_setting('test.w')::uuid;
+select isnt_empty($$ update public.workouts set rpe = 7 where id = current_setting('test.w')::uuid returning id $$, 'the client rates the session');
 
 -- Once A has started, it's A's alone.
 select pg_temp.as_user('cccccccc-0000-4000-8000-0000000000c0');

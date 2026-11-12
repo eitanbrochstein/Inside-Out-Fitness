@@ -1,8 +1,9 @@
 import { useState, type ReactNode } from 'react'
-import { ArrowUpDown, Check, Copy, Dumbbell, Scale, Trash2 } from 'lucide-react'
+import { ArrowUpDown, Check, Copy, Dumbbell, Link2, ListPlus, Repeat, Scale, Timer, Trash2, Unlink2 } from 'lucide-react'
 import { motion } from 'motion/react'
 import type { BlockWithSets } from '@/data/types'
 import { allSets, duplicateOf } from '@/data/useWorkout'
+import { groupOf, MEASURE_NAME, MEASURES, measureOf, orderWithAfter, supersetOf, withSettings } from '@/lib/blocks'
 import { todayISO } from '@/lib/dates'
 import { plural } from '@/lib/format'
 import { success } from '@/lib/haptics'
@@ -15,6 +16,7 @@ import { spring } from '@/ui/motion'
 import { Sheet, SheetAction } from '@/ui/Sheet'
 import { loadContextFor, priorBest, useWorkoutPage } from './context'
 import { blockLabel } from './ReorderList'
+import { RpePicker } from './RpePicker'
 import { SessionSummary, type SummaryRecord } from './SessionSummary'
 
 export function BlockActionsSheet({
@@ -30,10 +32,43 @@ export function BlockActionsSheet({
   onReorder: () => void
   onChangeExercise: (block: BlockWithSets) => void
 }) {
-  const { actions, deleteBlockWithUndo, doc } = useWorkoutPage()
+  const { actions, deleteBlockWithUndo, doc, addPaired, openMeasureSheet } = useWorkoutPage()
   if (!block) return null
   const close = () => onOpenChange(false)
   const isTM = block.max_kind === 'training_max'
+
+  // Supersets: the one this block is in, and the exercise (or superset) right after it.
+  const blocks = doc.workout_blocks
+  const members = supersetOf(blocks, block.id)
+  const last = members?.at(-1) ?? block
+  const next = blocks[blocks.findIndex((b) => b.id === last.id) + 1]
+  const nextMembers = next?.type === 'exercise' ? (supersetOf(blocks, next.id) ?? [next]) : null
+  const setGroup = (b: BlockWithSets, group: string | null) => actions.updateBlock.mutate({ id: b.id, patch: { settings: withSettings(b, { group }) } })
+
+  const pairWithNext = () => {
+    if (!nextMembers) return
+    const group = members ? groupOf(block)! : crypto.randomUUID()
+    if (!members) setGroup(block, group)
+    for (const b of nextMembers) setGroup(b, group)
+    close()
+  }
+
+  // Out of its superset, and moved below it so the rest stay together. A pair just comes apart.
+  const unpair = () => {
+    if (!members) return
+    if (members.length === 2) {
+      for (const b of members) setGroup(b, null)
+    } else {
+      setGroup(block, null)
+      if (block.id !== last.id) actions.reorderBlocks.mutate(orderWithAfter(blocks.map((b) => b.id), block.id, last.id))
+    }
+    close()
+  }
+
+  const later = (f: () => void) => {
+    close()
+    window.setTimeout(f, 250)
+  }
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange} title={blockLabel(block)}>
@@ -41,7 +76,7 @@ export function BlockActionsSheet({
         <SheetAction
           icon={<Copy />}
           onClick={() => {
-            actions.duplicateBlock.mutate({ source: block, copy: duplicateOf(block) })
+            actions.duplicateBlock.mutate({ source: block, copy: duplicateOf(block, blocks) })
             close()
           }}
         >
@@ -69,6 +104,22 @@ export function BlockActionsSheet({
             >
               Change exercise
             </SheetAction>
+            <SheetAction icon={<Timer />} onClick={() => later(() => openMeasureSheet(block))}>
+              Reps or time…
+            </SheetAction>
+            <SheetAction icon={<ListPlus />} onClick={() => later(() => addPaired(block))}>
+              {members ? 'Add exercise to superset' : 'Add paired exercise'}
+            </SheetAction>
+            {nextMembers && (
+              <SheetAction icon={<Link2 />} onClick={pairWithNext}>
+                {nextMembers.length > 1 ? 'Pair with next superset' : members ? 'Add next exercise to superset' : 'Pair with next exercise'}
+              </SheetAction>
+            )}
+            {members && (
+              <SheetAction icon={<Unlink2 />} onClick={unpair}>
+                Remove from superset
+              </SheetAction>
+            )}
             <SheetAction
               icon={<Scale />}
               onClick={() => {
@@ -145,6 +196,10 @@ export function FinishSheet({ open, onOpenChange }: { open: boolean; onOpenChang
             </ProgressRing>
           </div>
           <SessionSummary doc={page.doc} unit={page.units.unit} records={records} />
+          <div className="rounded-tile bg-(--glass-control) p-3">
+            <p className="mb-2.5 text-callout font-semibold">How hard was it?</p>
+            <RpePicker value={page.doc.rpe} onChange={(rpe) => page.actions.updateWorkout.mutate({ rpe })} />
+          </div>
           <Button size="lg" block onClick={() => change(false)}>
             Done
           </Button>
@@ -174,6 +229,32 @@ export function FinishSheet({ open, onOpenChange }: { open: boolean; onOpenChang
             Keep training
           </Button>
         </div>
+      </div>
+    </Sheet>
+  )
+}
+
+/** Whether an exercise's sets count reps, or time in seconds or minutes. */
+export function MeasureSheet({ block, open, onOpenChange }: { block: BlockWithSets | null; open: boolean; onOpenChange: (open: boolean) => void }) {
+  const { actions } = useWorkoutPage()
+  if (!block) return null
+  const current = measureOf(block)
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange} title="Count sets in" description={`${blockLabel(block)}. Time suits holds, carries and cardio.`}>
+      <div className="flex flex-col pb-2">
+        {MEASURES.map((m) => (
+          <SheetAction
+            key={m}
+            icon={m === 'reps' ? <Repeat /> : <Timer />}
+            onClick={() => {
+              if (m !== current) actions.updateBlock.mutate({ id: block.id, patch: { settings: withSettings(block, { measure: m }) } })
+              onOpenChange(false)
+            }}
+          >
+            <span className="flex-1">{MEASURE_NAME[m]}</span>
+            {m === current && <Check aria-label="Current" className="size-5 text-accent" strokeWidth={2.6} />}
+          </SheetAction>
+        ))}
       </div>
     </Sheet>
   )

@@ -126,3 +126,13 @@ export function runProgress(run: { start_date: string; week_count: number }, tod
 
 /** The Monday a program starts on by default: today on a Monday (the week is still whole), otherwise next Monday. */
 export const firstMonday = (today: string) => (weekdayOf(today) === 0 ? today : addDays(mondayOf(today), 7))
+
+const monthDay = (d: Date) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+
+/** "Nov 10 – 16", "Dec 29 – Jan 4, 2027": a week from its Monday (the year only when it isn't this one). */
+export function weekLabel(monday: string) {
+  const start = parseISODate(monday)
+  const end = parseISODate(addDays(monday, 6))
+  const range = `${monthDay(start)} – ${start.getMonth() === end.getMonth() ? end.getDate() : monthDay(end)}`
+  return end.getFullYear() === new Date().getFullYear() ? range : `${range}, ${end.getFullYear()}`
+}

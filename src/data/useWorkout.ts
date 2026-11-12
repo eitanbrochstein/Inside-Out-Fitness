@@ -3,6 +3,7 @@
 // refetch after structural changes once the queue is empty.
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useUserId } from '@/features/auth/AuthProvider'
+import { groupOf, withSettings } from '@/lib/blocks'
 import type { Database } from '@/lib/database.types'
 import { LockedError, must, mustWrite, supabase } from '@/lib/supabase'
 import { keys } from './keys'
@@ -62,11 +63,13 @@ export function newSetRow(fields: Pick<WorkoutSet, 'block_id' | 'owner_id' | 'po
   return {
     id: crypto.randomUUID(),
     target_reps: null,
+    target_seconds: null,
     target_percent: null,
     target_weight_kg: null,
     basis_max_kg: null,
     prescribed_load_kg: null,
     actual_reps: null,
+    actual_seconds: null,
     actual_weight_kg: null,
     completed_at: null,
     created_at: now(),
@@ -78,6 +81,7 @@ export function newSetRow(fields: Pick<WorkoutSet, 'block_id' | 'owner_id' | 'po
 /** A copy of a set's plan, for "+ Add Set". */
 export const copyPlan = (s: WorkoutSet) => ({
   target_reps: s.target_reps,
+  target_seconds: s.target_seconds,
   target_percent: s.target_percent,
   target_weight_kg: s.target_weight_kg,
 })
@@ -179,6 +183,30 @@ export function useWorkoutActions(workoutId: string, opts: { ownerId?: string; g
     (doc, { id, exercise }) => withBlock(doc, id, (b) => ({ ...b, exercise_id: exercise.id, exercise })),
   )
 
+  /**
+   * Adds a block directly below another (a superset's next exercise): inserted, then put in place.
+   * `order` is every block id in the new order, the new one included.
+   */
+  const insertBlockAfter = useDocMutation(
+    ctx,
+    async ({ block, order }: { block: BlockWithSets; order: string[] }) => {
+      mustWrite(await supabase.from('workout_blocks').insert(blockInsert(block)), guarded)
+      if (block.workout_sets.length) mustWrite(await supabase.from('workout_sets').insert(block.workout_sets.map(setInsert)), guarded)
+      must(await supabase.rpc('reorder_blocks', { p_workout: workoutId, p_ids: order }))
+    },
+    (doc, { block, order }) =>
+      withBlocks(doc, (bs) => {
+        const all = [...bs, block]
+        const placed = order.flatMap((id, position) => {
+          const b = all.find((x) => x.id === id)
+          return b ? [{ ...b, position }] : []
+        })
+        // Anything the order missed keeps its place at the end.
+        return [...placed, ...all.filter((b) => !order.includes(b.id)).map((b, i) => ({ ...b, position: order.length + i }))]
+      }),
+    { refetch: true },
+  )
+
   const deleteBlock = useDocMutation(
     ctx,
     async (block: BlockWithSets) => mustWrite(await supabase.from('workout_blocks').delete().eq('id', block.id).select('id'), guarded),
@@ -257,6 +285,7 @@ export function useWorkoutActions(workoutId: string, opts: { ownerId?: string; g
   return {
     updateWorkout,
     addBlock,
+    insertBlockAfter,
     updateBlock,
     changeExercise,
     deleteBlock,
@@ -275,11 +304,16 @@ export function useWorkoutActions(workoutId: string, opts: { ownerId?: string; g
 
 export type WorkoutActions = ReturnType<typeof useWorkoutActions>
 
-/** A copy of a block with fresh ids, placed directly below it. */
-export function duplicateOf(block: BlockWithSets): BlockWithSets {
+/**
+ * A copy of a block with fresh ids, placed directly below it. Inside a superset the copy joins it; a
+ * group id no other block shares is left behind (duplicate_block does the same).
+ */
+export function duplicateOf(block: BlockWithSets, blocks: BlockWithSets[]): BlockWithSets {
   const id = crypto.randomUUID()
+  const group = groupOf(block)
+  const leftover = group != null && !blocks.some((b) => b.id !== block.id && groupOf(b) === group)
   return {
-    ...newBlockRow({ ...block, id, position: block.position + 1 }),
+    ...newBlockRow({ ...block, id, position: block.position + 1, settings: leftover ? withSettings(block, { group: null }) : block.settings }),
     exercise: block.exercise,
     workout_sets: block.workout_sets.map((s) =>
       newSetRow({ block_id: id, owner_id: s.owner_id, position: s.position, ...copyPlan(s) }),

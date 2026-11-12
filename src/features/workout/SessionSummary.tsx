@@ -1,15 +1,19 @@
 import { useState, type ReactNode } from 'react'
-import { Trophy } from 'lucide-react'
+import { ChevronRight, Gauge, Trophy } from 'lucide-react'
 import type { WorkoutDoc } from '@/data/types'
 import { useExerciseMap } from '@/data/useExercises'
 import { usePersonalRecords } from '@/data/useInsights'
 import { useUnits } from '@/data/useProfile'
-import { formatVolume } from '@/lib/format'
+import { formatVolume, rpeLabel } from '@/lib/format'
 import { formatWeight, type Unit } from '@/lib/load'
 import { formatDuration, sessionTotals, type RecordKind } from '@/lib/session'
+import { Button } from '@/ui/Button'
 import { Card } from '@/ui/Card'
 import { cn } from '@/ui/cn'
 import { SectionLabel } from '@/ui/SectionLabel'
+import { Sheet } from '@/ui/Sheet'
+import { useWorkoutPage } from './context'
+import { RpePicker } from './RpePicker'
 
 export interface SummaryRecord {
   key: string
@@ -94,6 +98,47 @@ export function CompletedSummary({ doc }: { doc: WorkoutDoc }) {
           }
         })}
       />
+      <EffortRow doc={doc} />
     </Card>
+  )
+}
+
+/** The session RPE: shown to anyone who can see the workout, changed only by whoever trained it. */
+function EffortRow({ doc }: { doc: WorkoutDoc }) {
+  const { readOnly, actions } = useWorkoutPage()
+  const [open, setOpen] = useState(false)
+  if (readOnly && doc.rpe == null) return null
+  const value =
+    doc.rpe != null ? (
+      <span className="tabular-nums">
+        <span className="font-semibold">RPE {doc.rpe}</span> <span className="text-muted">· {rpeLabel(doc.rpe)}</span>
+      </span>
+    ) : (
+      <span className="font-semibold text-accent-text">Rate effort</span>
+    )
+  return (
+    <>
+      <button
+        type="button"
+        disabled={readOnly}
+        onClick={() => setOpen(true)}
+        className="mt-2 flex h-11 w-full select-none items-center gap-2 rounded-tile bg-(--glass-control) px-3 text-left text-callout active:opacity-70 disabled:active:opacity-100"
+      >
+        <Gauge className="size-[18px] shrink-0 text-muted" />
+        <span className="flex-1 text-muted">Effort</span>
+        {value}
+        {!readOnly && <ChevronRight className="size-4 shrink-0 text-faint" />}
+      </button>
+      {!readOnly && (
+        <Sheet open={open} onOpenChange={setOpen} title="How hard was it?" description="Session RPE: the whole workout, 1 to 10.">
+          <div className="flex flex-col gap-4 pt-1 pb-3">
+            <RpePicker value={doc.rpe} onChange={(rpe) => actions.updateWorkout.mutate({ rpe })} />
+            <Button size="lg" block onClick={() => setOpen(false)}>
+              Done
+            </Button>
+          </div>
+        </Sheet>
+      )}
+    </>
   )
 }

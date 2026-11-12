@@ -229,14 +229,14 @@ isOneToOne: false
                   ]
                 },"workout_sets": {
                   Row: {
-                    "actual_reps": number | null,"actual_weight_kg": number | null,"basis_max_kg": number | null,"block_id": string,"completed_at": string | null,"created_at": string,"id": string,"owner_id": string,"position": number,"prescribed_load_kg": number | null,"target_percent": number | null,"target_reps": number | null,"target_weight_kg": number | null,"updated_at": string
+                    "actual_reps": number | null,"actual_seconds": number | null,"actual_weight_kg": number | null,"basis_max_kg": number | null,"block_id": string,"completed_at": string | null,"created_at": string,"id": string,"owner_id": string,"position": number,"prescribed_load_kg": number | null,"target_percent": number | null,"target_reps": number | null,"target_seconds": number | null,"target_weight_kg": number | null,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "actual_reps"?: number | null,"actual_weight_kg"?: number | null,"basis_max_kg"?: number | null,"block_id": string,"completed_at"?: string | null,"created_at"?: string,"id"?: string,"owner_id": string,"position"?: number,"prescribed_load_kg"?: number | null,"target_percent"?: number | null,"target_reps"?: number | null,"target_weight_kg"?: number | null,"updated_at"?: string
+                    "actual_reps"?: number | null,"actual_seconds"?: number | null,"actual_weight_kg"?: number | null,"basis_max_kg"?: number | null,"block_id": string,"completed_at"?: string | null,"created_at"?: string,"id"?: string,"owner_id": string,"position"?: number,"prescribed_load_kg"?: number | null,"target_percent"?: number | null,"target_reps"?: number | null,"target_seconds"?: number | null,"target_weight_kg"?: number | null,"updated_at"?: string
                   }
                   Update: {
-                    "actual_reps"?: number | null,"actual_weight_kg"?: number | null,"basis_max_kg"?: number | null,"block_id"?: string,"completed_at"?: string | null,"created_at"?: string,"id"?: string,"owner_id"?: string,"position"?: number,"prescribed_load_kg"?: number | null,"target_percent"?: number | null,"target_reps"?: number | null,"target_weight_kg"?: number | null,"updated_at"?: string
+                    "actual_reps"?: number | null,"actual_seconds"?: number | null,"actual_weight_kg"?: number | null,"basis_max_kg"?: number | null,"block_id"?: string,"completed_at"?: string | null,"created_at"?: string,"id"?: string,"owner_id"?: string,"position"?: number,"prescribed_load_kg"?: number | null,"target_percent"?: number | null,"target_reps"?: number | null,"target_seconds"?: number | null,"target_weight_kg"?: number | null,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -249,14 +249,14 @@ isOneToOne: false
                   ]
                 },"workouts": {
                   Row: {
-                    "assigned_at": string | null,"assigned_by": string | null,"completed_at": string | null,"created_at": string,"id": string,"kind": string,"owner_id": string,"program_day": number | null,"program_id": string | null,"program_run_id": string | null,"scheduled_for": string | null,"source_workout_id": string | null,"started_at": string | null,"status": string,"subtitle": string,"title": string,"updated_at": string
+                    "assigned_at": string | null,"assigned_by": string | null,"completed_at": string | null,"created_at": string,"id": string,"kind": string,"owner_id": string,"program_day": number | null,"program_id": string | null,"program_run_id": string | null,"rpe": number | null,"scheduled_for": string | null,"source_workout_id": string | null,"started_at": string | null,"status": string,"subtitle": string,"title": string,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "assigned_at"?: string | null,"assigned_by"?: string | null,"completed_at"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"owner_id"?: string,"program_day"?: number | null,"program_id"?: string | null,"program_run_id"?: string | null,"scheduled_for"?: string | null,"source_workout_id"?: string | null,"started_at"?: string | null,"status"?: string,"subtitle"?: string,"title"?: string,"updated_at"?: string
+                    "assigned_at"?: string | null,"assigned_by"?: string | null,"completed_at"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"owner_id"?: string,"program_day"?: number | null,"program_id"?: string | null,"program_run_id"?: string | null,"rpe"?: number | null,"scheduled_for"?: string | null,"source_workout_id"?: string | null,"started_at"?: string | null,"status"?: string,"subtitle"?: string,"title"?: string,"updated_at"?: string
                   }
                   Update: {
-                    "assigned_at"?: string | null,"assigned_by"?: string | null,"completed_at"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"owner_id"?: string,"program_day"?: number | null,"program_id"?: string | null,"program_run_id"?: string | null,"scheduled_for"?: string | null,"source_workout_id"?: string | null,"started_at"?: string | null,"status"?: string,"subtitle"?: string,"title"?: string,"updated_at"?: string
+                    "assigned_at"?: string | null,"assigned_by"?: string | null,"completed_at"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"owner_id"?: string,"program_day"?: number | null,"program_id"?: string | null,"program_run_id"?: string | null,"rpe"?: number | null,"scheduled_for"?: string | null,"source_workout_id"?: string | null,"started_at"?: string | null,"status"?: string,"subtitle"?: string,"title"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -310,7 +310,7 @@ isOneToOne: false
                   ]
                 },"set_log": {
                   Row: {
-                    "block_position": number | null,"exercise_id": string | null,"owner_id": string | null,"performed_at": string | null,"reps": number | null,"set_id": string | null,"set_position": number | null,"weight_kg": number | null,"workout_id": string | null,"workout_title": string | null
+                    "block_position": number | null,"exercise_id": string | null,"owner_id": string | null,"performed_at": string | null,"reps": number | null,"seconds": number | null,"set_id": string | null,"set_position": number | null,"weight_kg": number | null,"workout_id": string | null,"workout_title": string | null
                   }
                   ComputedFields: never
                   Relationships: [
@@ -346,6 +346,9 @@ isOneToOne: false
 "copy_workout":
 { Args: { "p_kind"?: string,"p_new_id"?: string,"p_owner"?: string,"p_scheduled_for"?: string,"p_source": string }; Returns: string
                            },
+"create_program_from_workouts":
+{ Args: { "p_days": (number)[],"p_new_id"?: string,"p_title": string,"p_week_count": number,"p_workouts": (string)[] }; Returns: string
+                           },
 "delete_my_account":
 { Args: Record<PropertyKey, never>; Returns: undefined
                            },
@@ -357,7 +360,7 @@ isOneToOne: false
                            },
 "exercise_stats":
 { Args: { "p_exclude_workout"?: string,"p_exercise_ids": (string)[],"p_owner"?: string }; Returns: {
-              "best_e1rm_kg": number,"best_performed_at": string,"best_reps": number,"best_weight_kg": number,"exercise_id": string,"last_performed_at": string,"last_reps": number,"last_weight_kg": number,"last_workout_id": string,"session_count": number
+              "best_e1rm_kg": number,"best_performed_at": string,"best_reps": number,"best_seconds": number,"best_weight_kg": number,"exercise_id": string,"last_performed_at": string,"last_reps": number,"last_seconds": number,"last_weight_kg": number,"last_workout_id": string,"session_count": number
             }[]
                            },
 "finish_workout":
@@ -394,11 +397,17 @@ isOneToOne: false
 "reorder_blocks":
 { Args: { "p_ids": (string)[],"p_workout": string }; Returns: undefined
                            },
+"save_run_as_program":
+{ Args: { "p_new_id"?: string,"p_run": string }; Returns: string
+                           },
 "start_program":
 { Args: { "p_client_ids"?: (string)[],"p_program": string,"p_skip_before"?: string,"p_start": string }; Returns: string[]
                            },
 "stop_program_run":
 { Args: { "p_run": string }; Returns: number
+                           },
+"strip_run_prefix":
+{ Args: { "p_subtitle": string,"p_title": string }; Returns: string
                            },
 "training_summary":
 { Args: { "p_owner"?: string,"p_since"?: string }; Returns: {

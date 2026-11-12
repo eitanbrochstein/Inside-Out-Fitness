@@ -1,8 +1,10 @@
-import { Plus, Trophy, X } from 'lucide-react'
+import { ChevronDown, Plus, Trophy, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { toast } from 'sonner'
 import type { BlockWithSets, WorkoutSet } from '@/data/types'
 import { copyPlan, newSetRow } from '@/data/useWorkout'
+import { fromTimeField, MEASURE_HEAD, MEASURE_NAME, measureOf, toTimeField, type Measure } from '@/lib/blocks'
+import { formatSetTime } from '@/lib/format'
 import { success, tick } from '@/lib/haptics'
 import {
   formatNumber,
@@ -35,6 +37,7 @@ export function SetTable({ block }: { block: BlockWithSets }) {
   const perHand = block.exercise?.load_basis === 'per_hand'
   const unitHead = `${ctx.unit}${perHand ? ' / hand' : ''}`
   const maxHead = block.max_kind === 'training_max' ? '% TM' : '% 1RM'
+  const measure = measureOf(block)
   const sets = block.workout_sets
 
   const addSet = () => {
@@ -56,7 +59,15 @@ export function SetTable({ block }: { block: BlockWithSets }) {
       <div>
         <div className={cn(EDIT_GRID, 'mb-1.5 px-1')}>
           <span className={headCls}>Set</span>
-          <span className={cn(headCls, 'text-center')}>Reps</span>
+          <button
+            type="button"
+            onClick={() => page.openMeasureSheet(block)}
+            aria-label={`Sets count ${MEASURE_NAME[measure].toLowerCase()}. Change`}
+            className={cn(headCls, 'flex h-6 items-center justify-center gap-0.5 text-accent-text active:opacity-60')}
+          >
+            {MEASURE_HEAD[measure]}
+            <ChevronDown className="size-3" strokeWidth={3} />
+          </button>
           <span className={cn(headCls, 'text-center')}>{maxHead}</span>
           <span className={cn(headCls, 'text-center')}>{unitHead}</span>
           <span />
@@ -72,7 +83,7 @@ export function SetTable({ block }: { block: BlockWithSets }) {
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.2, ease }}
               >
-                <SetRowEdit set={s} index={i} ctx={ctx} />
+                <SetRowEdit set={s} index={i} ctx={ctx} measure={measure} />
               </motion.li>
             ))}
           </AnimatePresence>
@@ -90,13 +101,13 @@ export function SetTable({ block }: { block: BlockWithSets }) {
         <span className={headCls}>Set</span>
         <span className={headCls}>Target</span>
         <span className={cn(headCls, 'text-center')}>{unitHead}</span>
-        <span className={cn(headCls, 'text-center')}>Reps</span>
+        <span className={cn(headCls, 'text-center')}>{MEASURE_HEAD[measure]}</span>
         <span />
       </div>
       <ul className="flex flex-col gap-1.5">
         {sets.map((s, i) => (
           <li key={s.id}>
-            <SetRowTrain set={s} index={i} ctx={ctx} block={block} record={records.get(s.id)} />
+            <SetRowTrain set={s} index={i} ctx={ctx} block={block} measure={measure} record={records.get(s.id)} />
           </li>
         ))}
       </ul>
@@ -107,7 +118,9 @@ export function SetTable({ block }: { block: BlockWithSets }) {
   )
 }
 
-function SetRowEdit({ set, index, ctx }: { set: WorkoutSet; index: number; ctx: LoadContext }) {
+const timeLabel = (measure: Measure) => (measure === 'min' ? 'minutes' : 'seconds')
+
+function SetRowEdit({ set, index, ctx, measure }: { set: WorkoutSet; index: number; ctx: LoadContext; measure: Measure }) {
   const { actions, isTemplate } = useWorkoutPage()
   const update = (patch: Parameters<typeof actions.updateSet.mutate>[0]['patch']) => actions.updateSet.mutate({ id: set.id, patch })
   const planned = plannedLoadKg(set, ctx)
@@ -136,13 +149,25 @@ function SetRowEdit({ set, index, ctx }: { set: WorkoutSet; index: number; ctx: 
   return (
     <div className={cn(EDIT_GRID, 'rounded-tile bg-(--glass-control) px-1 py-1')}>
       <span className="pl-1 text-callout font-bold tabular-nums">{index + 1}</span>
-      <NumberField
-        aria-label={`Set ${index + 1} reps`}
-        decimals={false}
-        value={set.target_reps}
-        placeholder="–"
-        onCommit={(v) => update({ target_reps: v })}
-      />
+      {measure === 'reps' ? (
+        <NumberField
+          key="reps"
+          aria-label={`Set ${index + 1} reps`}
+          decimals={false}
+          value={set.target_reps}
+          placeholder="–"
+          onCommit={(v) => update({ target_reps: v })}
+        />
+      ) : (
+        <NumberField
+          key={measure}
+          aria-label={`Set ${index + 1} ${timeLabel(measure)}`}
+          decimals={measure === 'min'}
+          value={toTimeField(set.target_seconds, measure)}
+          placeholder="–"
+          onCommit={(v) => update({ target_seconds: fromTimeField(v, measure) })}
+        />
+      )}
       <NumberField
         aria-label={`Set ${index + 1} percent of max`}
         value={set.target_percent}
@@ -174,14 +199,17 @@ function SetRowTrain({
   index,
   ctx,
   block,
+  measure,
   record,
 }: {
   set: WorkoutSet
   index: number
   ctx: LoadContext
   block: BlockWithSets
+  measure: Measure
   record: RecordKind | undefined
 }) {
+  const timed = measure !== 'reps'
   const page = useWorkoutPage()
   const { actions, doc, readOnly } = page
   const stats = block.exercise_id ? page.stats.get(block.exercise_id) : undefined
@@ -193,8 +221,10 @@ function SetRowTrain({
   const loggedKg = set.actual_weight_kg
   const deviates =
     done &&
-    ((set.target_reps != null && set.actual_reps !== set.target_reps) ||
-      (planned != null && loggedKg != null && Math.abs(loggedKg - planned) > 0.01))
+    (timed
+      ? set.target_seconds != null && set.actual_seconds !== set.target_seconds
+      : (set.target_reps != null && set.actual_reps !== set.target_reps) ||
+        (planned != null && loggedKg != null && Math.abs(loggedKg - planned) > 0.01))
 
   const update = (patch: Parameters<typeof actions.updateSet.mutate>[0]['patch']) => actions.updateSet.mutate({ id: set.id, patch })
 
@@ -205,10 +235,11 @@ function SetRowTrain({
       return
     }
     if (doc.status === 'planned') actions.updateWorkout.mutate({ status: 'in_progress', started_at: new Date().toISOString() })
+    // A timed set logs its time; reps stay untouched, so they never count toward reps or records.
     const logged = {
       completed_at: new Date().toISOString(),
       actual_weight_kg: set.actual_weight_kg ?? hintKg,
-      actual_reps: set.actual_reps ?? set.target_reps,
+      ...(timed ? { actual_seconds: set.actual_seconds ?? set.target_seconds } : { actual_reps: set.actual_reps ?? set.target_reps }),
     }
     // A record gets a stronger buzz than an ordinary set.
     const live = showsLiveRecords(page)
@@ -219,11 +250,12 @@ function SetRowTrain({
     update({ ...logged, ...freezeSet(set, ctx) })
   }
 
+  const amount = timed ? (set.target_seconds != null ? formatSetTime(set.target_seconds) : null) : set.target_reps != null ? `${set.target_reps}` : null
   const target =
-    set.target_reps == null && planned == null && set.target_percent == null
+    amount == null && planned == null && set.target_percent == null
       ? '—'
       : [
-          set.target_reps != null ? `${set.target_reps}` : null,
+          amount,
           planned != null ? formatNumber(toDisplay(planned, ctx.unit)) : set.target_percent != null ? `${formatNumber(set.target_percent)}%` : null,
         ]
           .filter(Boolean)
@@ -262,15 +294,29 @@ function SetRowTrain({
         onCommit={(v) => update({ actual_weight_kg: v == null ? null : fromDisplay(v, ctx.unit) })}
         className="font-semibold"
       />
-      <NumberField
-        aria-label={`Set ${index + 1} reps done`}
-        disabled={readOnly}
-        decimals={false}
-        value={set.actual_reps}
-        placeholder={set.target_reps != null ? String(set.target_reps) : '–'}
-        onCommit={(v) => update({ actual_reps: v })}
-        className="font-semibold"
-      />
+      {timed ? (
+        <NumberField
+          key={measure}
+          aria-label={`Set ${index + 1} ${timeLabel(measure)} done`}
+          disabled={readOnly}
+          decimals={measure === 'min'}
+          value={toTimeField(set.actual_seconds, measure)}
+          placeholder={set.target_seconds != null ? String(toTimeField(set.target_seconds, measure)) : '–'}
+          onCommit={(v) => update({ actual_seconds: fromTimeField(v, measure) })}
+          className="font-semibold"
+        />
+      ) : (
+        <NumberField
+          key="reps"
+          aria-label={`Set ${index + 1} reps done`}
+          disabled={readOnly}
+          decimals={false}
+          value={set.actual_reps}
+          placeholder={set.target_reps != null ? String(set.target_reps) : '–'}
+          onCommit={(v) => update({ actual_reps: v })}
+          className="font-semibold"
+        />
+      )}
       <button
         type="button"
         aria-label={done ? `Undo set ${index + 1}` : `Complete set ${index + 1}`}

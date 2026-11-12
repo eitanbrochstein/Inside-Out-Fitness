@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { ArrowUpDown, Bookmark, CalendarPlus, ClipboardList, Copy, Ellipsis, LayoutList, Play, Plus, Repeat, Send } from 'lucide-react'
+import { ArrowUpDown, Bookmark, CalendarPlus, CalendarRange, ClipboardList, Copy, Ellipsis, LayoutList, Play, Plus, Repeat, Send } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useLocation, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
 import { useUserId } from '@/features/auth/AuthProvider'
 import { ExercisePickerSheet } from '@/features/exercises/ExercisePickerSheet'
 import { MaxSheet } from '@/features/exercises/MaxSheet'
+import { AddToProgramSheet } from '@/features/library/AddToProgramSheet'
 import { keys } from '@/data/keys'
 import type { BlockWithSets, Exercise, MaxKind, WorkoutDoc } from '@/data/types'
 import { useCurrentMaxes } from '@/data/useMaxes'
@@ -16,6 +17,7 @@ import { useProgram } from '@/data/usePrograms'
 import { useWorkoutStats } from '@/data/useStats'
 import { newBlockRow, newSetRow, useWorkout, useWorkoutActions } from '@/data/useWorkout'
 import { useCopyWorkout } from '@/data/useWorkouts'
+import { groupBlocks, groupOf, orderWithAfter, supersetOf, withSettings } from '@/lib/blocks'
 import { programDayLabel } from '@/lib/calendar'
 import { formatScheduled, formatTimestamp, lowerRelative } from '@/lib/dates'
 import { supabase } from '@/lib/supabase'
@@ -36,7 +38,8 @@ import { Comments } from './Comments'
 import { ExerciseBlock } from './ExerciseBlock'
 import { ReorderList } from './ReorderList'
 import { CompletedSummary } from './SessionSummary'
-import { BlockActionsSheet, FinishSheet, ScheduleSheet, WorkoutActionsSheet } from './Sheets'
+import { BlockActionsSheet, FinishSheet, MeasureSheet, ScheduleSheet, WorkoutActionsSheet } from './Sheets'
+import { SupersetCard } from './SupersetCard'
 import { TextBlock } from './TextBlock'
 import { TrainStrip } from './TrainStrip'
 
@@ -75,10 +78,12 @@ function WorkoutLoader({ id }: { id: string }) {
 type SheetState =
   | { type: 'block'; block: BlockWithSets }
   | { type: 'max'; exerciseId: string; kind: MaxKind; n: number }
-  | { type: 'picker'; replace: BlockWithSets | null }
+  | { type: 'picker'; replace: BlockWithSets | null; after?: BlockWithSets }
+  | { type: 'measure'; block: BlockWithSets }
   | { type: 'finish' }
   | { type: 'workout' }
   | { type: 'schedule' }
+  | { type: 'program'; n: number }
   | { type: null }
 
 const isEmptyDoc = (d: WorkoutDoc) => d.status === 'planned' && !d.title.trim() && !d.subtitle.trim() && d.workout_blocks.length === 0
@@ -168,7 +173,8 @@ function WorkoutView({ doc }: { doc: WorkoutDoc }) {
     setMode(next)
     if (next === 'train' && expanded.size === 0) {
       const first = doc.workout_blocks.find((b) => b.type === 'exercise' && b.workout_sets.some((s) => !s.completed_at))
-      if (first) setExpanded(new Set([first.id]))
+      // A superset opens whole: its exercises are done in turns.
+      if (first) setExpanded(new Set((supersetOf(doc.workout_blocks, first.id) ?? [first]).map((b) => b.id)))
     }
   }
 
@@ -188,9 +194,39 @@ function WorkoutView({ doc }: { doc: WorkoutDoc }) {
     scrollTo(block.id)
   }
 
+  // A new exercise directly below `anchor`'s superset, or paired with `anchor` into a new one.
+  const pairWith = (anchor: BlockWithSets, exercise: Exercise) => {
+    const members = supersetOf(doc.workout_blocks, anchor.id)
+    const group = members ? groupOf(anchor)! : crypto.randomUUID()
+    if (!members) actions.updateBlock.mutate({ id: anchor.id, patch: { settings: withSettings(anchor, { group }) } })
+    const last = members?.at(-1) ?? anchor
+    const block = newBlockRow({
+      workout_id: doc.id,
+      owner_id: doc.owner_id,
+      position: last.position + 1,
+      type: 'exercise',
+      exercise_id: exercise.id,
+      settings: { group },
+    })
+    actions.insertBlockAfter.mutate({
+      block: { ...block, exercise, workout_sets: [newSetRow({ block_id: block.id, owner_id: doc.owner_id, position: 0 })] },
+      order: orderWithAfter(
+        doc.workout_blocks.map((b) => b.id),
+        block.id,
+        last.id,
+      ),
+    })
+    setExpanded((prev) => new Set(prev).add(block.id))
+    scrollTo(block.id)
+  }
+
   const pickExercise = (exercise: Exercise) => {
     if (sheet.type === 'picker' && sheet.replace) {
       actions.changeExercise.mutate({ id: sheet.replace.id, exercise })
+      return
+    }
+    if (sheet.type === 'picker' && sheet.after) {
+      pairWith(sheet.after, exercise)
       return
     }
     const block = newBlockRow({ workout_id: doc.id, owner_id: doc.owner_id, position: nextPosition, type: 'exercise', exercise_id: exercise.id })
@@ -261,13 +297,18 @@ function WorkoutView({ doc }: { doc: WorkoutDoc }) {
     ? { icon: <ClipboardList />, label: 'Save as template', onClick: () => copyAndStay('template', 'Saved as a template') }
     : { icon: <Bookmark />, label: 'Save workout', onClick: () => copyAndStay('template', 'Saved to your library') }
   const reorderItems = canReorder ? [{ icon: <ArrowUpDown />, label: 'Reorder blocks', onClick: reorder }] : []
+  const programItem = {
+    icon: <CalendarRange />,
+    label: programDay ? 'Add to another program…' : 'Add to program…',
+    onClick: () => window.setTimeout(() => openSheet({ type: 'program', n: Date.now() }), 250),
+  }
 
   // The page's ⋯ menu, by what this workout is to you.
   const menuFor = (): Omit<Parameters<typeof WorkoutActionsSheet>[0], 'open' | 'onOpenChange'> | null => {
     if (programDay) {
       return {
         title: doc.title || untitled,
-        items: [saveItem, ...reorderItems],
+        items: [saveItem, programItem, ...reorderItems],
         destructive: {
           label: 'Remove from program…',
           warning: `Takes it off ${programDayLabel(programDay.day)}. Workouts the program already put on a plan stay.`,
@@ -286,6 +327,7 @@ function WorkoutView({ doc }: { doc: WorkoutDoc }) {
           { icon: <Play />, label: 'Start now', onClick: () => copyAs('workout', 'New workout created') },
           { icon: <CalendarPlus />, label: 'Schedule…', onClick: () => window.setTimeout(() => openSheet({ type: 'schedule' }), 250) },
           { icon: <Copy />, label: 'Duplicate', onClick: () => copyAs('template', isCoach ? 'Template duplicated' : 'Saved workout duplicated') },
+          programItem,
           ...reorderItems,
         ],
         destructive: isCoach
@@ -301,7 +343,7 @@ function WorkoutView({ doc }: { doc: WorkoutDoc }) {
     if (coachEdit) {
       return {
         title: doc.title || 'Untitled workout',
-        items: [saveItem, ...reorderItems],
+        items: [saveItem, programItem, ...reorderItems],
         destructive: {
           label: 'Remove assignment…',
           warning: `This removes the workout from ${ownerName}'s journal. They haven't started it yet.`,
@@ -313,7 +355,12 @@ function WorkoutView({ doc }: { doc: WorkoutDoc }) {
     if (readOnly) return null
     return {
       title: doc.title || 'Untitled workout',
-      items: [{ icon: <Repeat />, label: 'Repeat as new workout', onClick: () => copyAs('workout', 'New workout created') }, saveItem, ...reorderItems],
+      items: [
+        { icon: <Repeat />, label: 'Repeat as new workout', onClick: () => copyAs('workout', 'New workout created') },
+        saveItem,
+        programItem,
+        ...reorderItems,
+      ],
       destructive: {
         label: 'Delete workout…',
         warning: "This removes the workout and every set logged in it. This can't be undone.",
@@ -342,6 +389,8 @@ function WorkoutView({ doc }: { doc: WorkoutDoc }) {
     toggle,
     openBlockActions: (block) => openSheet({ type: 'block', block }),
     openMaxSheet: (exerciseId, kind) => openSheet({ type: 'max', exerciseId, kind, n: Date.now() }),
+    openMeasureSheet: (block) => openSheet({ type: 'measure', block }),
+    addPaired: (block) => openSheet({ type: 'picker', replace: null, after: block }),
     deleteBlockWithUndo,
   }
 
@@ -424,10 +473,10 @@ function WorkoutView({ doc }: { doc: WorkoutDoc }) {
         ) : (
           <div className="flex flex-col gap-3">
             <AnimatePresence initial={false}>
-              {doc.workout_blocks.map((block) => (
+              {lettered(groupBlocks(doc.workout_blocks)).map(({ unit, letter }) => (
                 <motion.div
-                  key={block.id}
-                  id={`block-${block.id}`}
+                  key={unit.key}
+                  id={unit.kind === 'single' ? `block-${unit.block.id}` : undefined}
                   layout="position"
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -435,10 +484,12 @@ function WorkoutView({ doc }: { doc: WorkoutDoc }) {
                   transition={{ duration: 0.25, ease }}
                   className="scroll-mt-24 scroll-mb-32"
                 >
-                  {block.type === 'exercise' ? (
-                    <ExerciseBlock block={block} />
+                  {unit.kind === 'group' ? (
+                    <SupersetCard blocks={unit.blocks} letter={letter} />
+                  ) : unit.block.type === 'exercise' ? (
+                    <ExerciseBlock block={unit.block} />
                   ) : (
-                    <TextBlock block={block} autoFocus={focusBlock === block.id} />
+                    <TextBlock block={unit.block} autoFocus={focusBlock === unit.block.id} />
                   )}
                 </motion.div>
               ))}
@@ -484,8 +535,12 @@ function WorkoutView({ doc }: { doc: WorkoutDoc }) {
         <>
           <ExercisePickerSheet
             {...sheetProps('picker')}
-            title={sheet.type === 'picker' && sheet.replace ? 'Change exercise' : 'Add exercise'}
+            title={sheet.type === 'picker' && sheet.replace ? 'Change exercise' : sheet.type === 'picker' && sheet.after ? 'Pair an exercise' : 'Add exercise'}
             onPick={pickExercise}
+          />
+          <MeasureSheet
+            {...sheetProps('measure')}
+            block={sheet.type === 'measure' ? (doc.workout_blocks.find((b) => b.id === sheet.block.id) ?? sheet.block) : null}
           />
           <MaxSheet
             key={sheet.type === 'max' ? sheet.n : 'max'}
@@ -509,8 +564,15 @@ function WorkoutView({ doc }: { doc: WorkoutDoc }) {
         </>
       )}
       {menu && <WorkoutActionsSheet {...menu} />}
+      {menu && <AddToProgramSheet key={sheet.type === 'program' ? sheet.n : 'program'} {...sheetProps('program')} workout={doc} />}
     </WorkoutPageContext>
   )
+}
+
+/** Supersets are lettered A, B, C… down the page, so their exercises read A1, A2. */
+function lettered<U extends { kind: string }>(units: U[]) {
+  let groups = 0
+  return units.map((unit) => ({ unit, letter: unit.kind === 'group' ? String.fromCharCode(65 + (groups++ % 26)) : '' }))
 }
 
 function TitleField({

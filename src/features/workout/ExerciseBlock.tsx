@@ -2,6 +2,8 @@ import { Check, ChevronRight, Ellipsis } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Link } from 'react-router'
 import { MAX_LABEL, type BlockWithSets, type ExerciseStats, type MaxKind } from '@/data/types'
+import { measureOf } from '@/lib/blocks'
+import { formatSetTime } from '@/lib/format'
 import { formatWeight, isPercentSet, type Unit } from '@/lib/load'
 import { useAutosave, useDraft } from '@/lib/useAutosave'
 import { exerciseSummary } from '@/lib/summary'
@@ -16,8 +18,10 @@ import { SetTable } from './SetTable'
 const topSetLabel = (kg: number | null, reps: number | null, unit: Unit) =>
   kg == null ? `${reps ?? 0} reps` : `${formatWeight(kg, unit)} × ${reps ?? 0}`
 
-export function ExerciseBlock({ block }: { block: BlockWithSets }) {
+/** An exercise and its sets. `embedded` sits inside a superset's card, tagged A1, A2… */
+export function ExerciseBlock({ block, embedded, tag }: { block: BlockWithSets; embedded?: boolean; tag?: string }) {
   const page = useWorkoutPage()
+  const measure = measureOf(block)
   const open = page.expanded.has(block.id)
   const ctx = loadContextFor(page, block)
   const stats = block.exercise_id ? page.stats.get(block.exercise_id) : undefined
@@ -37,10 +41,14 @@ export function ExerciseBlock({ block }: { block: BlockWithSets }) {
     mode: page.summaryMode,
     ctx,
     lastPerformedKg: page.isTemplate ? null : (stats?.last_weight_kg ?? null),
+    measure,
   })
+  // A timed exercise's history is its times; with none logged yet there's nothing to show.
+  const showStats = !!stats && (measure === 'reps' || stats.last_seconds != null)
+  const Root = embedded ? 'div' : Card
 
   return (
-    <Card className="overflow-hidden">
+    <Root className="overflow-hidden">
       <div className="flex items-center">
         <button
           type="button"
@@ -49,7 +57,12 @@ export function ExerciseBlock({ block }: { block: BlockWithSets }) {
           className="flex min-w-0 flex-1 items-center gap-3 py-4 pr-2 pl-4 text-left select-none"
         >
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-headline font-semibold">{block.exercise?.name ?? 'Exercise'}</span>
+            <span className="flex min-w-0 items-center gap-2">
+              {tag && (
+                <span className="shrink-0 rounded-md bg-accent-soft px-1.5 py-0.5 text-micro font-bold text-accent-text tabular-nums">{tag}</span>
+              )}
+              <span className="block truncate text-headline font-semibold">{block.exercise?.name ?? 'Exercise'}</span>
+            </span>
             <span className="mt-1 block truncate text-subhead text-muted tabular-nums">{summary}</span>
           </span>
           {page.mode === 'train' && sets.length > 0 && page.summaryMode !== 'edit' && (
@@ -87,7 +100,7 @@ export function ExerciseBlock({ block }: { block: BlockWithSets }) {
                     : `Percentages use your ${MAX_LABEL[block.max_kind as MaxKind]} when you start this.`}
                 </p>
               )}
-              {(showMax || stats) && (
+              {(showMax || showStats) && (
                 <div className="mb-3 border-b border-border pb-3">
                   {showMax && (
                     <button
@@ -110,7 +123,7 @@ export function ExerciseBlock({ block }: { block: BlockWithSets }) {
                       )}
                     </button>
                   )}
-                  {stats && <StatsLine stats={stats} href={page.statsHref(block.exercise_id!)} unit={ctx.unit} />}
+                  {showStats && <StatsLine stats={stats} href={page.statsHref(block.exercise_id!)} unit={ctx.unit} timed={measure !== 'reps'} />}
                 </div>
               )}
               <SetTable block={block} />
@@ -119,11 +132,13 @@ export function ExerciseBlock({ block }: { block: BlockWithSets }) {
           </motion.div>
         )}
       </AnimatePresence>
-    </Card>
+    </Root>
   )
 }
 
-function StatsLine({ stats, href, unit }: { stats: ExerciseStats; href: string; unit: Unit }) {
+function StatsLine({ stats, href, unit, timed }: { stats: ExerciseStats; href: string; unit: Unit; timed: boolean }) {
+  const last = timed ? formatSetTime(stats.last_seconds ?? 0) : topSetLabel(stats.last_weight_kg, stats.last_reps, unit)
+  const best = timed ? formatSetTime(stats.best_seconds ?? 0) : topSetLabel(stats.best_weight_kg, stats.best_reps, unit)
   return (
     <Link
       to={href}
@@ -131,11 +146,11 @@ function StatsLine({ stats, href, unit }: { stats: ExerciseStats; href: string; 
       className="flex h-8 items-center gap-1.5 text-footnote text-muted tabular-nums active:opacity-60"
     >
       <span>
-        Last <span className="font-semibold text-text">{topSetLabel(stats.last_weight_kg, stats.last_reps, unit)}</span>
+        Last <span className="font-semibold text-text">{last}</span>
       </span>
       <span className="text-faint">·</span>
       <span>
-        Best <span className="font-semibold text-text">{topSetLabel(stats.best_weight_kg, stats.best_reps, unit)}</span>
+        Best <span className="font-semibold text-text">{best}</span>
       </span>
       <ChevronRight className="ml-auto size-4 text-faint" />
     </Link>

@@ -56,6 +56,29 @@ describe('exerciseSummary', () => {
     expect(exerciseSummary({ sets, mode: 'done', ctx })).toBe('2 sets · top 190 lb × 3')
   })
 
+  it('counts time for a timed exercise', () => {
+    const plank = Array.from({ length: 3 }, () => set({ target_seconds: 45 }))
+    expect(exerciseSummary({ sets: plank, mode: 'edit', ctx, measure: 'sec' })).toBe('3 × 45 sec')
+    const bike = [set({ target_seconds: 600 }), set({ target_seconds: 300 })]
+    expect(exerciseSummary({ sets: bike, mode: 'edit', ctx, measure: 'min' })).toBe('2 sets')
+    const carry = Array.from({ length: 2 }, () => set({ target_seconds: 90, target_weight_kg: lb(50) }))
+    expect(exerciseSummary({ sets: carry, mode: 'edit', ctx, measure: 'sec' })).toBe('2 × 1:30 · 50 lb')
+    // Reps planned before switching to time don't show.
+    expect(exerciseSummary({ sets: [set({ target_reps: 8 })], mode: 'edit', ctx, measure: 'sec' })).toBe('1 set')
+  })
+
+  it('shows the longest timed set when done', () => {
+    const sets = [
+      set({ target_seconds: 45, actual_seconds: 45, completed_at: 'x' }),
+      set({ target_seconds: 45, actual_seconds: 60, completed_at: 'x' }),
+      set({ target_seconds: 45 }),
+    ]
+    expect(exerciseSummary({ sets, mode: 'done', ctx, measure: 'sec' })).toBe('2 sets · best 1 min')
+    const carry = [set({ actual_seconds: 90, actual_weight_kg: lb(50), completed_at: 'x' })]
+    expect(exerciseSummary({ sets: carry, mode: 'done', ctx, measure: 'sec' })).toBe('1 set · best 50 lb × 1:30')
+    expect(exerciseSummary({ sets: [set({ target_seconds: 45 })], mode: 'done', ctx, measure: 'sec' })).toBe('Not logged')
+  })
+
   it('handles empty blocks', () => {
     expect(exerciseSummary({ sets: [], mode: 'edit', ctx })).toBe('No sets yet')
     expect(exerciseSummary({ sets: [set({ target_reps: 5 })], mode: 'done', ctx })).toBe('Not logged')

@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { CalendarRange, Ellipsis } from 'lucide-react'
-import { Link } from 'react-router'
+import { BookmarkPlus, CalendarRange, Ellipsis } from 'lucide-react'
+import { Link, useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { useUserId } from '@/features/auth/AuthProvider'
 import { WorkoutActionsSheet } from '@/features/workout/Sheets'
 import type { ProgramRun } from '@/data/types'
-import { useProgramRuns, useStopRun } from '@/data/usePrograms'
+import { useProgramRuns, useSaveRun, useStopRun } from '@/data/usePrograms'
 import { useWorkoutList } from '@/data/useWorkouts'
 import { addDays, daysBetween, mondayOf } from '@/lib/calendar'
 import { formatScheduled, lowerRelative } from '@/lib/dates'
@@ -14,13 +14,16 @@ import { IconButton } from '@/ui/IconButton'
 
 /**
  * The programs running through the week on screen, and which week of each it is. This week also shows
- * the ones still to come. The trainee, or the coach who assigned it, can stop one.
+ * the ones still to come. The trainee, or the coach who assigned it, can stop one, and the trainee can
+ * save one (a coach's too) as a program of their own.
  */
 export function RunBanners({ owner, monday, today }: { owner: string; monday: string; today: string }) {
   const uid = useUserId()
+  const navigate = useNavigate()
   const runs = useProgramRuns(owner)
   const current = useWorkoutList('current', owner)
   const stop = useStopRun(owner)
+  const saveRun = useSaveRun()
   const [stopping, setStopping] = useState<ProgramRun | null>(null)
   const [open, setOpen] = useState(false)
 
@@ -81,7 +84,26 @@ export function RunBanners({ owner, monday, today }: { owner: string; monday: st
         open={open}
         onOpenChange={setOpen}
         title={stopping?.title ?? 'Program'}
-        items={[]}
+        items={
+          stopping?.owner_id === uid
+            ? [
+                {
+                  icon: <BookmarkPlus />,
+                  label: 'Save to my library',
+                  onClick: () => {
+                    const title = stopping.title
+                    saveRun.mutate(stopping.id, {
+                      onSuccess: (id) =>
+                        toast(`Saved ${title} to your library`, {
+                          description: 'Edit it or start it again any time.',
+                          action: { label: 'Open', onClick: () => navigate(`/programs/${id}`, { viewTransition: true }) },
+                        }),
+                    })
+                  },
+                },
+              ]
+            : []
+        }
         destructive={{
           label: 'Stop program…',
           warning: `Takes its ${plural(upcoming, 'upcoming workout')} off the plan. Workouts already started or finished stay.`,

@@ -123,6 +123,7 @@ export function useCreateWorkout() {
         scheduled_for: dateFor(kind, scheduledFor),
         started_at: null,
         completed_at: null,
+        rpe: null,
         source_workout_id: null,
         assigned_by: assigned ? uid : null,
         assigned_at: assigned ? now : null,

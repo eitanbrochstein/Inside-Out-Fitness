@@ -175,3 +175,58 @@ export function useStopRun(ownerId?: string) {
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.workouts(ownerId ?? uid) }),
   })
 }
+
+// ---------- saving programs from what's planned ----------
+
+/**
+ * A new program from workouts, each on a program day (week * 7 + weekday): saved weeks of a calendar, or
+ * one workout onto a new program. Resolves to the new program's id.
+ */
+export function useCreateProgramFrom() {
+  const uid = useUserId()
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (v: { title: string; weekCount: number; workouts: string[]; days: number[] }) => {
+      const id = crypto.randomUUID()
+      must(
+        await supabase.rpc('create_program_from_workouts', {
+          p_title: v.title,
+          p_week_count: v.weekCount,
+          p_workouts: v.workouts,
+          p_days: v.days,
+          p_new_id: id,
+        }),
+      )
+      return id
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.programs(uid) }),
+  })
+}
+
+/** A copy of a workout on a day of a program. With `newWeek`, a week is added at the end first. */
+export function useAddToProgram() {
+  const uid = useUserId()
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (v: { programId: string; day: number; source: string; newWeek?: boolean }) => {
+      if (v.newWeek) must(await supabase.rpc('program_insert_week', { p_program: v.programId, p_at: Math.floor(v.day / 7) }))
+      must(await supabase.rpc('add_program_workout', { p_program: v.programId, p_day: v.day, p_source: v.source }))
+    },
+    // A program's page and list are both under the owner's workouts key.
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.workouts(uid) }),
+  })
+}
+
+/** A program run on your calendar, saved as a program of your own. Resolves to the new program's id. */
+export function useSaveRun() {
+  const uid = useUserId()
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (runId: string) => {
+      const id = crypto.randomUUID()
+      must(await supabase.rpc('save_run_as_program', { p_run: runId, p_new_id: id }))
+      return id
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.programs(uid) }),
+  })
+}

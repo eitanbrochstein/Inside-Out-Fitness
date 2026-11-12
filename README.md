@@ -45,7 +45,7 @@ To try it on a phone on the same Wi-Fi, run `pnpm dev --host` and set `VITE_SUPA
 | `pnpm test` | Unit tests: load math, summaries, progress, insights and calendar helpers, theme tokens and contrast |
 | `pnpm typecheck` / `pnpm lint` | TypeScript / oxlint |
 | `pnpm db:reset` | Rebuild the local database from migrations + `supabase/seed.sql` |
-| `pnpm db:test` | pgTAP tests: owner-only data, coach access and planning, assignment, programs, training totals and records, account deletion (`supabase/tests`) |
+| `pnpm db:test` | pgTAP tests: owner-only data, coach access and planning, assignment, programs and saving them, training totals and records, account deletion (`supabase/tests`) |
 | `pnpm db:types` | Regenerate `src/lib/database.types.ts` after a migration |
 | `pnpm icons` | Regenerate PWA icons from `public/favicon.svg` |
 | `pnpm native:sync` | Production build, copied into the iOS and Android projects |
@@ -57,6 +57,9 @@ To try it on a phone on the same Wi-Fi, run `pnpm dev --host` and set `VITE_SUPA
 - **Weights are stored in kg** and converted to the user's unit (lb/kg) only for display, so switching units never loses precision.
 - **Load math** lives in one pure module, `src/lib/load.ts`. Percentage load = max × %, rounded half-up to the user's plate increment, e.g. 225 lb × 75% → 170 lb. Typed loads are never rounded.
 - **Planned vs actual:** each set has plan columns (`target_*`), frozen columns (`basis_max_kg`, `prescribed_load_kg`) and actual columns (`actual_*`). Completing a percentage set freezes the max it was based on. Updating a max later changes planned workouts but never completed ones.
+- **Timed sets:** an exercise counts reps or time, chosen from its Reps column header (or its ⋯ → Reps or time). The choice lives in `workout_blocks.settings.measure` (`sec` or `min`). Time is stored in seconds (`target_seconds`, `actual_seconds`) and shown in seconds or minutes, the same way weights are stored in kg. Timed sets don't add reps or set records. Last and best show the times.
+- **Supersets:** consecutive exercise blocks that share `settings.group` show as one card (A1, A2…), open together in Train mode, and move as one when reordering. Pair them from an exercise's ⋯. Every copy (save, repeat, assign, programs) copies `settings`, so supersets and timed exercises come along.
+- **Session RPE:** the finish screen asks how hard the workout was, 1–10 (`workouts.rpe`). You can change it from the finished workout's summary, and History shows it. It's part of the trainee's log, so a coach can see it but not set it.
 - **Saving:** every edit updates the screen immediately and saves in the background, in order, per workout. Text autosaves 500 ms after you stop typing. Deleting a block or set shows an Undo toast.
 - **Security:** row-level security restricts every table to its owner. Child rows take their owner from their parent inside the database, so they can't be planted in someone else's workout.
 
@@ -82,7 +85,7 @@ Components use the semantic names only (`bg-surface`, `text-muted`, `text-accent
 ```
 supabase/migrations   schema, functions (reorder, duplicate, copy, finish, stats, training summary, records), exercise library, programs, coach planning
 supabase/seed.sql     local demo users, history, saved workouts and programs (never pushed)
-supabase/tests        pgTAP tests (owner-only, coaching, coach planning, programs, insights, appearance, account deletion)
+supabase/tests        pgTAP tests (owner-only, coaching, coach planning, programs, program saving, insights, appearance, account deletion)
 src/lib               load math, summaries, progress and calendar helpers, Supabase client, native.ts (everything that differs in the apps)
 src/data              TanStack Query hooks (one per resource; useWorkout holds all block/set mutations)
 src/styles            design tokens, themes, glass materials (see "Design system")
@@ -134,6 +137,7 @@ Settings → Delete account calls `delete_my_account` (`…_delete_account.sql`)
 - **Plan:** Workouts → Plan is your week, a day at a time; tap the dates for the month. A workout sits on its planned date, or on the day it was finished. A missed one offers "Move to today", and on the current week older missed and undated ones are listed too. The week is in the URL, so Back returns to it.
 - **Saved workouts:** any workout's ⋯ → Save workout keeps a copy in Workouts → Saved. The + on Home, or on a day of the plan, starts from one. A saved workout is a `kind = 'template'` workout, the same row a coach calls a template.
 - **Programs:** a program is weeks of days, and each day holds template workouts (`workouts.program_id`, with `program_day` = week × 7 + weekday, Monday = 0). Each week is its own copy, so weeks can progress; "+ Week" copies the last one. Start program puts every day on the calendar from a Monday (`start_program`) and records it as a run (`program_runs`). Days already past are left out. Stopping a run takes off the workouts not yet started; deleting a program leaves what it already scheduled.
+- **Saving programs:** Plan → ⋯ → Save weeks as program copies the workouts on a stretch of weeks into a new program, each on its weekday. Any workout's ⋯ → Add to program puts a copy on a day of a program, on a new week, or in a new program. A running program's ⋯ → Save to my library copies the run as a program of your own, including one a coach assigned. The app works out the days (`create_program_from_workouts`), except for runs, which are dates minus the run's Monday (`save_run_as_program`). When a workout a run put on your calendar is saved, the "Program · Week N" the run added to its subtitle comes off. Only plans are copied.
 - **Dates:** `scheduled_for` is a local calendar date, and the server never decides what "today" is (its clock is UTC). The app passes the dates, and `src/lib/calendar.ts` does day arithmetic on dates rather than milliseconds, so a daylight-saving change can't move a workout.
 
 ## Coaching

@@ -27,6 +27,10 @@ export interface WorkoutPageState {
   toggle: (blockId: string) => void
   openBlockActions: (block: BlockWithSets) => void
   openMaxSheet: (exerciseId: string, kind: MaxKind) => void
+  /** Reps, seconds or minutes for an exercise's sets. */
+  openMeasureSheet: (block: BlockWithSets) => void
+  /** Picks an exercise to pair with `block`: added below its superset, or making one with it. */
+  addPaired: (block: BlockWithSets) => void
   deleteBlockWithUndo: (block: BlockWithSets) => void
 }
 

@@ -1,13 +1,14 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Check, ChevronDown, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
+import { CalendarRange, Check, ChevronDown, ChevronLeft, ChevronRight, Ellipsis, Plus } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Link, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import { useUserId } from '@/features/auth/AuthProvider'
+import { WorkoutActionsSheet } from '@/features/workout/Sheets'
 import type { WorkoutListItem } from '@/data/types'
 import { calendarQuery, useCalendar, useReschedule, useWorkoutList } from '@/data/useWorkouts'
-import { addDays, addMonths, daysBetween, isMissed, mondayOf, monthGrid, monthOf, placeOnDays, weekDays } from '@/lib/calendar'
+import { addDays, addMonths, daysBetween, isMissed, mondayOf, monthGrid, monthOf, placeOnDays, weekDays, weekLabel } from '@/lib/calendar'
 import { formatDay, parseISODate, todayISO } from '@/lib/dates'
 import { plural } from '@/lib/format'
 import { Badge } from '@/ui/Chip'
@@ -19,6 +20,7 @@ import { SectionLabel } from '@/ui/SectionLabel'
 import { Dots } from './Dots'
 import { MonthGrid } from './MonthGrid'
 import { RunBanners } from './RunBanners'
+import { SaveWeeksSheet } from './SaveWeeksSheet'
 
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/
 const MONTH_RE = /^\d{4}-\d{2}$/
@@ -28,14 +30,6 @@ const shortDay = (day: string) => {
   return `${d.toLocaleDateString(undefined, { weekday: 'short' })} ${d.getDate()}`
 }
 const longDay = (day: string) => formatDay(parseISODate(day))
-const monthDay = (d: Date) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-
-function weekLabel(monday: string) {
-  const start = parseISODate(monday)
-  const end = parseISODate(addDays(monday, 6))
-  const range = `${monthDay(start)} – ${start.getMonth() === end.getMonth() ? end.getDate() : monthDay(end)}`
-  return end.getFullYear() === new Date().getFullYear() ? range : `${range}, ${end.getFullYear()}`
-}
 
 const monthLabel = (month: string) => parseISODate(`${month}-01`).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
 
@@ -61,6 +55,9 @@ export function PlanCalendar({ ownerId, onAdd }: { ownerId?: string; onAdd?: (da
   const month = monthParam && MONTH_RE.test(monthParam) ? monthParam : null
   const monday = weekParam && DAY_RE.test(weekParam) ? mondayOf(weekParam) : thisMonday
   const [dir, setDir] = useState(1)
+  // Your own plan's ⋯: save weeks of it as a program. `n` remounts the sheet so it starts fresh.
+  const [sheet, setSheet] = useState<{ type: 'menu' | 'save' | null; n: number }>({ type: null, n: 0 })
+  const closeSheet = (open: boolean) => !open && setSheet((s) => ({ ...s, type: null }))
 
   const goWeek = (m: string) => {
     setDir(Math.sign(daysBetween(month ? `${month}-01` : monday, m)) || 1)
@@ -96,6 +93,7 @@ export function PlanCalendar({ ownerId, onAdd }: { ownerId?: string; onAdd?: (da
       onPrev={() => goWeek(addDays(monday, -7))}
       onNext={() => goWeek(addDays(monday, 7))}
       onToday={monday === thisMonday ? undefined : () => goWeek(thisMonday)}
+      onMore={owner === uid ? () => setSheet({ type: 'menu', n: Date.now() }) : undefined}
       unit="week"
     />
   )
@@ -128,6 +126,23 @@ export function PlanCalendar({ ownerId, onAdd }: { ownerId?: string; onAdd?: (da
           )}
         </motion.div>
       </AnimatePresence>
+      {owner === uid && (
+        <>
+          <WorkoutActionsSheet
+            open={sheet.type === 'menu'}
+            onOpenChange={closeSheet}
+            title={weekLabel(monday)}
+            items={[
+              {
+                icon: <CalendarRange />,
+                label: 'Save weeks as program…',
+                onClick: () => window.setTimeout(() => setSheet((s) => ({ ...s, type: 'save' })), 250),
+              },
+            ]}
+          />
+          <SaveWeeksSheet key={sheet.n} open={sheet.type === 'save'} onOpenChange={closeSheet} monday={monday} />
+        </>
+      )}
     </div>
   )
 }
@@ -141,6 +156,7 @@ function CalendarHeader({
   onPrev,
   onNext,
   onToday,
+  onMore,
   unit,
 }: {
   label: string
@@ -149,6 +165,7 @@ function CalendarHeader({
   onPrev: () => void
   onNext: () => void
   onToday?: () => void
+  onMore?: () => void
   unit: 'week' | 'month'
 }) {
   return (
@@ -178,6 +195,11 @@ function CalendarHeader({
       <IconButton size="sm" aria-label={`Next ${unit}`} onClick={onNext}>
         <ChevronRight className="size-5" />
       </IconButton>
+      {onMore && (
+        <IconButton size="sm" aria-label="Plan actions" onClick={onMore}>
+          <Ellipsis className="size-5" />
+        </IconButton>
+      )}
     </div>
   )
 }
