@@ -12,6 +12,7 @@ import { sessionRecords } from '@/lib/session'
 import { Button } from '@/ui/Button'
 import { ProgressRing } from '@/ui/charts/ProgressRing'
 import { DatePill } from '@/ui/DatePill'
+import { TimePill } from '@/ui/TimePill'
 import { spring } from '@/ui/motion'
 import { Sheet, SheetAction } from '@/ui/Sheet'
 import { loadContextFor, priorBest, useWorkoutPage } from './context'
@@ -323,7 +324,7 @@ export function WorkoutActionsSheet({
   )
 }
 
-/** Puts a copy of a saved workout on a day of your plan. */
+/** Puts a copy of a saved workout on a day of your plan, at a time if you like. */
 export function ScheduleSheet({
   open,
   onOpenChange,
@@ -331,9 +332,10 @@ export function ScheduleSheet({
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSchedule: (date: string) => void
+  onSchedule: (date: string, time: string | null) => void
 }) {
   const [date, setDate] = useState(todayISO)
+  const [time, setTime] = useState<string | null>(null)
   return (
     <Sheet
       open={open}
@@ -346,12 +348,16 @@ export function ScheduleSheet({
           <span className="text-muted">Day</span>
           <DatePill size="md" label="Day" value={date} onChange={(d) => d && setDate(d)} />
         </div>
+        <div className="flex items-center justify-between text-callout">
+          <span className="text-muted">Time</span>
+          <TimePill size="md" label="Time" emptyLabel="Any time" value={time} onChange={setTime} />
+        </div>
         <Button
           size="lg"
           block
           onClick={() => {
             onOpenChange(false)
-            onSchedule(date)
+            onSchedule(date, time)
           }}
         >
           Add to plan

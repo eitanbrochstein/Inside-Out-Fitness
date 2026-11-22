@@ -2,6 +2,7 @@
 // like the rest of the app. Day arithmetic goes through calendar dates, never milliseconds, so a
 // daylight-saving change can't shift a day.
 import { parseISODate, toISODate } from './dates'
+import { compareTimes } from './format'
 
 export function addDays(day: string, n: number) {
   const d = parseISODate(day)
@@ -58,6 +59,7 @@ export function addMonths(month: string, n: number) {
 interface Placeable {
   status: string
   scheduled_for: string | null
+  scheduled_time?: string | null
   completed_at: string | null
   created_at: string
 }
@@ -67,7 +69,7 @@ const STATUS_ORDER: Record<string, number> = { completed: 0, in_progress: 1, pla
 /** The day a workout sits on: the day it was finished, else the day it's planned for. */
 export const dayOf = (w: Placeable) => (w.status === 'completed' && w.completed_at ? localDay(w.completed_at) : w.scheduled_for)
 
-/** Workouts by day, for the given days only. Within a day: done first, then under way, then planned. */
+/** Workouts by day, for the given days only. Within a day: done first, then under way, then planned, each by time. */
 export function placeOnDays<T extends Placeable>(items: T[], days: string[]): Map<string, T[]> {
   const out = new Map(days.map((d) => [d, [] as T[]]))
   for (const w of items) {
@@ -75,7 +77,12 @@ export function placeOnDays<T extends Placeable>(items: T[], days: string[]): Ma
     if (day) out.get(day)?.push(w)
   }
   for (const list of out.values()) {
-    list.sort((a, b) => (STATUS_ORDER[a.status] ?? 3) - (STATUS_ORDER[b.status] ?? 3) || a.created_at.localeCompare(b.created_at))
+    list.sort(
+      (a, b) =>
+        (STATUS_ORDER[a.status] ?? 3) - (STATUS_ORDER[b.status] ?? 3) ||
+        compareTimes(a.scheduled_time, b.scheduled_time) ||
+        a.created_at.localeCompare(b.created_at),
+    )
   }
   return out
 }

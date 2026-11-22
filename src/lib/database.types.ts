@@ -89,6 +89,46 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"notification_prefs": {
+                  Row: {
+                    "client_activity": boolean,"coach_updates": boolean,"comments": boolean,"created_at": string,"day_reminder_time": string | null,"nudge_after_days": number | null,"reminder_lead_min": number,"reminders": boolean,"timezone": string,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "client_activity"?: boolean,"coach_updates"?: boolean,"comments"?: boolean,"created_at"?: string,"day_reminder_time"?: string | null,"nudge_after_days"?: number | null,"reminder_lead_min"?: number,"reminders"?: boolean,"timezone"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "client_activity"?: boolean,"coach_updates"?: boolean,"comments"?: boolean,"created_at"?: string,"day_reminder_time"?: string | null,"nudge_after_days"?: number | null,"reminder_lead_min"?: number,"reminders"?: boolean,"timezone"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"notifications": {
+                  Row: {
+                    "attempts": number,"body": string,"category": string,"claimed_at": string | null,"collapse_key": string | null,"created_at": string,"dedupe_key": string | null,"error": string | null,"id": string,"send_after": string,"sent_at": string | null,"title": string,"url": string,"user_id": string,"workout_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "attempts"?: number,"body"?: string,"category": string,"claimed_at"?: string | null,"collapse_key"?: string | null,"created_at"?: string,"dedupe_key"?: string | null,"error"?: string | null,"id"?: string,"send_after"?: string,"sent_at"?: string | null,"title": string,"url"?: string,"user_id": string,"workout_id"?: string | null
+                  }
+                  Update: {
+                    "attempts"?: number,"body"?: string,"category"?: string,"claimed_at"?: string | null,"collapse_key"?: string | null,"created_at"?: string,"dedupe_key"?: string | null,"error"?: string | null,"id"?: string,"send_after"?: string,"sent_at"?: string | null,"title"?: string,"url"?: string,"user_id"?: string,"workout_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "notifications_workout_id_fkey"
+      columns: ["workout_id"]
+isOneToOne: false
+      referencedRelation: "set_log"
+      referencedColumns: ["workout_id"]
+    },{
+      foreignKeyName: "notifications_workout_id_fkey"
+      columns: ["workout_id"]
+isOneToOne: false
+      referencedRelation: "workouts"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"profiles": {
                   Row: {
                     "accent": string,"created_at": string,"display_name": string | null,"glass": boolean,"id": string,"is_coach": boolean,"rounding_increment": number,"rounding_mode": string,"theme": string,"unit": string,"updated_at": string,"weekly_goal": number
@@ -139,6 +179,20 @@ isOneToOne: false
                   }
                   Update: {
                     "created_at"?: string,"description"?: string,"id"?: string,"owner_id"?: string,"title"?: string,"updated_at"?: string,"week_count"?: number
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"push_devices": {
+                  Row: {
+                    "apns_sandbox": boolean,"created_at": string,"id": string,"last_seen_at": string,"platform": string,"subscription": Json | null,"token": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "apns_sandbox"?: boolean,"created_at"?: string,"id"?: string,"last_seen_at"?: string,"platform": string,"subscription"?: Json | null,"token": string,"user_id": string
+                  }
+                  Update: {
+                    "apns_sandbox"?: boolean,"created_at"?: string,"id"?: string,"last_seen_at"?: string,"platform"?: string,"subscription"?: Json | null,"token"?: string,"user_id"?: string
                   }
                   Relationships: [
                     
@@ -249,14 +303,14 @@ isOneToOne: false
                   ]
                 },"workouts": {
                   Row: {
-                    "assigned_at": string | null,"assigned_by": string | null,"completed_at": string | null,"created_at": string,"id": string,"kind": string,"owner_id": string,"program_day": number | null,"program_id": string | null,"program_run_id": string | null,"rpe": number | null,"scheduled_for": string | null,"source_workout_id": string | null,"started_at": string | null,"status": string,"subtitle": string,"title": string,"updated_at": string
+                    "assigned_at": string | null,"assigned_by": string | null,"completed_at": string | null,"created_at": string,"id": string,"kind": string,"notes": string,"owner_id": string,"program_day": number | null,"program_id": string | null,"program_run_id": string | null,"rpe": number | null,"scheduled_for": string | null,"scheduled_time": string | null,"source_workout_id": string | null,"started_at": string | null,"status": string,"subtitle": string,"title": string,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "assigned_at"?: string | null,"assigned_by"?: string | null,"completed_at"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"owner_id"?: string,"program_day"?: number | null,"program_id"?: string | null,"program_run_id"?: string | null,"rpe"?: number | null,"scheduled_for"?: string | null,"source_workout_id"?: string | null,"started_at"?: string | null,"status"?: string,"subtitle"?: string,"title"?: string,"updated_at"?: string
+                    "assigned_at"?: string | null,"assigned_by"?: string | null,"completed_at"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"notes"?: string,"owner_id"?: string,"program_day"?: number | null,"program_id"?: string | null,"program_run_id"?: string | null,"rpe"?: number | null,"scheduled_for"?: string | null,"scheduled_time"?: string | null,"source_workout_id"?: string | null,"started_at"?: string | null,"status"?: string,"subtitle"?: string,"title"?: string,"updated_at"?: string
                   }
                   Update: {
-                    "assigned_at"?: string | null,"assigned_by"?: string | null,"completed_at"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"owner_id"?: string,"program_day"?: number | null,"program_id"?: string | null,"program_run_id"?: string | null,"rpe"?: number | null,"scheduled_for"?: string | null,"source_workout_id"?: string | null,"started_at"?: string | null,"status"?: string,"subtitle"?: string,"title"?: string,"updated_at"?: string
+                    "assigned_at"?: string | null,"assigned_by"?: string | null,"completed_at"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"notes"?: string,"owner_id"?: string,"program_day"?: number | null,"program_id"?: string | null,"program_run_id"?: string | null,"rpe"?: number | null,"scheduled_for"?: string | null,"scheduled_time"?: string | null,"source_workout_id"?: string | null,"started_at"?: string | null,"status"?: string,"subtitle"?: string,"title"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -335,13 +389,24 @@ isOneToOne: false
 { Args: { "p_client": string,"p_new_id"?: string,"p_scheduled_for"?: string }; Returns: string
                            },
 "assign_template":
-{ Args: { "p_client_ids": (string)[],"p_scheduled_for"?: string,"p_template": string }; Returns: string[]
+{ Args: { "p_client_ids": (string)[],"p_scheduled_for"?: string,"p_scheduled_time"?: string,"p_template": string }; Returns: string[]
+                           },
+"claim_push_batch":
+{ Args: { "p_limit"?: number }; Returns: {
+              "body": string,"collapse_key": string,"devices": Json,"id": string,"title": string,"url": string,"user_id": string
+            }[]
                            },
 "coach_can_edit":
 { Args: { "p_workout": string }; Returns: boolean
                            },
 "coach_can_edit_block":
 { Args: { "p_block": string }; Returns: boolean
+                           },
+"coaches_actively":
+{ Args: { "p_client": string,"p_coach": string }; Returns: boolean
+                           },
+"complete_push":
+{ Args: { "p_results": Json }; Returns: undefined
                            },
 "copy_workout":
 { Args: { "p_kind"?: string,"p_new_id"?: string,"p_owner"?: string,"p_scheduled_for"?: string,"p_source": string }; Returns: string
@@ -354,6 +419,9 @@ isOneToOne: false
                            },
 "duplicate_block":
 { Args: { "p_block": string,"p_new_id"?: string,"p_set_ids"?: (string)[] }; Returns: string
+                           },
+"enqueue_notification":
+{ Args: { "p_body": string,"p_category": string,"p_collapse_key"?: string,"p_dedupe_key"?: string,"p_send_after"?: string,"p_title": string,"p_url": string,"p_user": string,"p_workout"?: string }; Returns: undefined
                            },
 "epley_kg":
 { Args: { "p_reps": number,"p_weight": number }; Returns: number
@@ -383,6 +451,9 @@ isOneToOne: false
 "new_invite_code":
 { Args: Record<PropertyKey, never>; Returns: string
                            },
+"person_name":
+{ Args: { "p_fallback": string,"p_user": string }; Returns: string
+                           },
 "personal_records":
 { Args: { "p_limit"?: number,"p_owner"?: string,"p_since"?: string,"p_workout"?: string }; Returns: {
               "exercise_id": string,"kind": string,"performed_at": string,"previous": number,"reps": number,"value": number,"weight_kg": number,"workout_id": string
@@ -394,11 +465,26 @@ isOneToOne: false
 "program_insert_week":
 { Args: { "p_at": number,"p_copy_from"?: number,"p_program": string }; Returns: undefined
                            },
+"queue_due_reminders":
+{ Args: { "p_now"?: string }; Returns: undefined
+                           },
+"register_push_device":
+{ Args: { "p_platform": string,"p_subscription"?: Json,"p_timezone"?: string,"p_token": string }; Returns: undefined
+                           },
 "reorder_blocks":
 { Args: { "p_ids": (string)[],"p_workout": string }; Returns: undefined
                            },
+"run_push_jobs":
+{ Args: Record<PropertyKey, never>; Returns: undefined
+                           },
 "save_run_as_program":
 { Args: { "p_new_id"?: string,"p_run": string }; Returns: string
+                           },
+"short_day":
+{ Args: { "p_day": string }; Returns: string
+                           },
+"short_time":
+{ Args: { "p_time": string }; Returns: string
                            },
 "start_program":
 { Args: { "p_client_ids"?: (string)[],"p_program": string,"p_skip_before"?: string,"p_start": string }; Returns: string[]
@@ -413,6 +499,12 @@ isOneToOne: false
 { Args: { "p_owner"?: string,"p_since"?: string }; Returns: {
               "categories": Json,"performed_at": string,"rep_count": number,"set_count": number,"started_at": string,"status": string,"title": string,"volume_kg": number,"workout_id": string
             }[]
+                           },
+"wants_notification":
+{ Args: { "p_category": string,"p_user": string }; Returns: boolean
+                           },
+"workout_title":
+{ Args: { "p_title": string }; Returns: string
                            }
           }
           Enums: {

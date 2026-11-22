@@ -1,1 +1,0 @@
-- "Load failed" and "Failed to fetch" error on vercel app

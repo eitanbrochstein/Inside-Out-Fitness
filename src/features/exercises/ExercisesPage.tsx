@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Plus, SearchX } from 'lucide-react'
+import { Calculator, Plus, SearchX } from 'lucide-react'
 import { useNavigate } from 'react-router'
 import { useUserId } from '@/features/auth/AuthProvider'
 import type { Exercise } from '@/data/types'
@@ -52,9 +52,14 @@ export function ExercisesPage() {
         title="Exercises"
         subtitle="Maxes, records and history"
         actions={
-          <IconButton aria-label="New exercise" variant="accent" size="md" onClick={() => setCreating(true)}>
-            <Plus className="size-5" strokeWidth={2.4} />
-          </IconButton>
+          <>
+            <IconButton aria-label="1RM calculator" className="mr-1" onClick={() => navigate('/tools/1rm', { viewTransition: true })}>
+              <Calculator className="size-[22px]" />
+            </IconButton>
+            <IconButton aria-label="New exercise" variant="accent" size="md" className="mr-2" onClick={() => setCreating(true)}>
+              <Plus className="size-5" strokeWidth={2.4} />
+            </IconButton>
+          </>
         }
       />
 

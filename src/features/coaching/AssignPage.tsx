@@ -21,6 +21,7 @@ import { Card } from '@/ui/Card'
 import { CheckIndicator } from '@/ui/Checkbox'
 import { cn } from '@/ui/cn'
 import { DatePill } from '@/ui/DatePill'
+import { TimePill } from '@/ui/TimePill'
 import { EmptyState } from '@/ui/EmptyState'
 import { Page } from '@/ui/Page'
 import { PageHeader } from '@/ui/PageHeader'
@@ -87,6 +88,7 @@ function AssignWorkout({ switcher }: { switcher: ReactNode }) {
   const newTemplate = useNewWorkout('template')
   const assign = useAssignTemplate()
   const [date, setDate] = useState<string>(todayISO())
+  const [time, setTime] = useState<string | null>(null)
   const [picking, setPicking] = useState(false)
 
   const templateId = params.get('template') ?? templates.data?.[0]?.id ?? null
@@ -106,7 +108,7 @@ function AssignWorkout({ switcher }: { switcher: ReactNode }) {
   const submit = () => {
     if (!templateId || chosen.length === 0) return
     assign.mutate(
-      { templateId, clientIds: chosen.map((c) => c.id), scheduledFor: date || null },
+      { templateId, clientIds: chosen.map((c) => c.id), scheduledFor: date || null, scheduledTime: time },
       {
         onSuccess: () => {
           toast.success(`Assigned to ${chosen.map(firstName).join(', ')}`, {
@@ -152,8 +154,9 @@ function AssignWorkout({ switcher }: { switcher: ReactNode }) {
 
         <PickerButton label="Workout template" value={template?.title || 'Untitled template'} onClick={() => setPicking(true)} />
 
-        <div className="mt-3">
+        <div className="mt-3 flex flex-wrap gap-2">
           <DatePill size="md" label="Scheduled date" value={date || null} onChange={(d) => setDate(d ?? '')} />
+          {date && <TimePill size="md" label="Scheduled time" value={time} onChange={setTime} />}
         </div>
 
         <ClientChecklist

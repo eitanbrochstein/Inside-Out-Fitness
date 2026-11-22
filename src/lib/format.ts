@@ -26,3 +26,13 @@ const RPE_LABELS = ['Very light', 'Very light', 'Light', 'Light', 'Moderate', 'M
 
 /** How a session RPE (1–10) reads in words. */
 export const rpeLabel = (rpe: number) => RPE_LABELS[Math.min(10, Math.max(1, Math.round(rpe))) - 1]
+
+/** A planned time of day ("18:30" or "18:30:00", as Postgres sends it) in the device's style: "6:30 PM". */
+export function formatTime(time: string) {
+  const [h, m] = time.split(':').map(Number)
+  return new Date(2000, 0, 1, h, m).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+}
+
+/** Orders planned times, untimed last. */
+export const compareTimes = (a: string | null | undefined, b: string | null | undefined) =>
+  a && b ? a.slice(0, 5).localeCompare(b.slice(0, 5)) : a ? -1 : b ? 1 : 0

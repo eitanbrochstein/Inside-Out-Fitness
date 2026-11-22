@@ -119,8 +119,10 @@ export function useCreateWorkout() {
         kind,
         title: '',
         subtitle: '',
+        notes: '',
         status: 'planned',
         scheduled_for: dateFor(kind, scheduledFor),
+        scheduled_time: null,
         started_at: null,
         completed_at: null,
         rpe: null,
@@ -158,7 +160,20 @@ export function useCopyWorkout() {
   const uid = useUserId()
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ source, id, kind = 'workout', scheduledFor }: { source: string; id: string; kind?: Kind; scheduledFor?: string }) =>
+    mutationFn: async ({
+      source,
+      id,
+      kind = 'workout',
+      scheduledFor,
+      scheduledTime,
+    }: {
+      source: string
+      id: string
+      kind?: Kind
+      scheduledFor?: string
+      /** A time for the copy's day (Schedule). Without one, a dated copy keeps the source's time. */
+      scheduledTime?: string | null
+    }) => {
       must(
         await supabase.rpc('copy_workout', {
           p_source: source,
@@ -166,7 +181,11 @@ export function useCopyWorkout() {
           p_kind: kind,
           p_scheduled_for: dateFor(kind, scheduledFor) ?? undefined,
         }),
-      ),
+      )
+      if (kind === 'workout' && scheduledTime !== undefined) {
+        must(await supabase.from('workouts').update({ scheduled_time: scheduledTime }).eq('id', id))
+      }
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.workouts(uid) }),
   })
 }

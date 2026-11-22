@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="window_background">#070B18</color>
+    <!-- Tints the push notification icon (the Midnight theme's accent). -->
+    <color name="notification_accent">#2A64F6</color>
 </resources>

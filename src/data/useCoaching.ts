@@ -161,12 +161,14 @@ export function useAcceptInvite() {
 export function useAssignTemplate() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (args: { templateId: string; clientIds: string[]; scheduledFor: string | null }) =>
+    mutationFn: async (args: { templateId: string; clientIds: string[]; scheduledFor: string | null; scheduledTime?: string | null }) =>
       must(
         await supabase.rpc('assign_template', {
           p_template: args.templateId,
           p_client_ids: args.clientIds,
           p_scheduled_for: args.scheduledFor ?? undefined,
+          // Only sent when set, so assigning works against a database that predates times.
+          ...(args.scheduledFor && args.scheduledTime ? { p_scheduled_time: args.scheduledTime } : {}),
         }),
       ),
     onSuccess: () => {

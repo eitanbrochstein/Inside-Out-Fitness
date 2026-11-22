@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { Calculator } from 'lucide-react'
+import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { useUserId } from '@/features/auth/AuthProvider'
 import { MAX_LABEL, type MaxKind } from '@/data/types'
@@ -20,18 +22,32 @@ interface Props {
   /** Whose max: yourself by default, or a client when coaching. */
   ownerId?: string
   ownerName?: string
+  /** A value to start from, in the display unit (the 1RM calculator's estimate). */
+  initialValue?: number
+  /** Saved with the max, e.g. where an estimate came from. */
+  note?: string
 }
 
 /** Records a new 1RM or training max. Remount (via key) to reset between exercises. */
-export function MaxSheet({ open, onOpenChange, exerciseId, kind: initialKind = 'one_rm', ownerId, ownerName }: Props) {
+export function MaxSheet({
+  open,
+  onOpenChange,
+  exerciseId,
+  kind: initialKind = 'one_rm',
+  ownerId,
+  ownerName,
+  initialValue,
+  note,
+}: Props) {
   const uid = useUserId()
+  const navigate = useNavigate()
   const owner = ownerId ?? uid
   const exercise = useExerciseMap().get(exerciseId ?? '')
   const maxes = useCurrentMaxes(owner)
   const add = useAddMax()
   const { unit } = useUnits()
   const [kind, setKind] = useState<MaxKind>(initialKind)
-  const [value, setValue] = useState<number | null>(null)
+  const [value, setValue] = useState<number | null>(initialValue ?? null)
 
   const current = maxes.get(exerciseId, kind)
   const perHand = exercise?.load_basis === 'per_hand'
@@ -45,7 +61,7 @@ export function MaxSheet({ open, onOpenChange, exerciseId, kind: initialKind = '
       kind,
       value_kg: fromDisplay(value, unit),
       recorded_on: todayISO(),
-      note: null,
+      note: note ?? null,
       created_at: new Date().toISOString(),
     })
     toast.success(`${MAX_LABEL[kind]} updated`, { description: 'Planned workouts now use the new value.' })
@@ -99,6 +115,19 @@ export function MaxSheet({ open, onOpenChange, exerciseId, kind: initialKind = '
         <Button size="lg" block disabled={value == null || value <= 0} onClick={save}>
           Save {MAX_LABEL[kind]}
         </Button>
+        {!ownerId && initialValue == null && exerciseId && (
+          <button
+            type="button"
+            onClick={() => {
+              onOpenChange(false)
+              navigate(`/tools/1rm?exercise=${exerciseId}`, { viewTransition: true })
+            }}
+            className="flex h-10 items-center justify-center gap-2 text-callout font-semibold text-accent-text active:opacity-60"
+          >
+            <Calculator className="size-4" />
+            Estimate from a set
+          </button>
+        )}
       </div>
     </Sheet>
   )

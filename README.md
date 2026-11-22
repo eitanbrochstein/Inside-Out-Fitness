@@ -2,7 +2,7 @@
 
 A minimal, mobile-first strength-training journal: workouts are pages of collapsible text and exercise blocks, sets can be planned as a percentage of a stored 1RM, and Train mode logs what was actually lifted without overwriting the plan. Weeks are planned on a calendar, from saved workouts or multi-week programs. Built from `Training_App_Developer_Plan_With_Visuals.docx`.
 
-**Status:** Phase 1 (personal journal), Phase 2 (coaching: invites, templates, assignment, client review, comments) and planning (a plan calendar, saved workouts, multi-week programs, coaches planning their clients' weeks) are built. Custom email (SMTP) and password reset are next.
+**Status:** Phase 1 (personal journal), Phase 2 (coaching: invites, templates, assignment, client review, comments), planning (a plan calendar, saved workouts, multi-week programs, coaches planning their clients' weeks), coach notes, a 1RM calculator and push notifications are built. Custom email (SMTP) and password reset are next.
 
 ## Stack
 
@@ -45,7 +45,7 @@ To try it on a phone on the same Wi-Fi, run `pnpm dev --host` and set `VITE_SUPA
 | `pnpm test` | Unit tests: load math, summaries, progress, insights and calendar helpers, theme tokens and contrast |
 | `pnpm typecheck` / `pnpm lint` | TypeScript / oxlint |
 | `pnpm db:reset` | Rebuild the local database from migrations + `supabase/seed.sql` |
-| `pnpm db:test` | pgTAP tests: owner-only data, coach access and planning, assignment, programs and saving them, training totals and records, account deletion (`supabase/tests`) |
+| `pnpm db:test` | pgTAP tests: owner-only data, coach access and planning, notes and times, assignment, programs and saving them, notifications, training totals and records, account deletion (`supabase/tests`) |
 | `pnpm db:types` | Regenerate `src/lib/database.types.ts` after a migration |
 | `pnpm icons` | Regenerate PWA icons from `public/favicon.svg` |
 | `pnpm native:sync` | Production build, copied into the iOS and Android projects |
@@ -59,6 +59,8 @@ To try it on a phone on the same Wi-Fi, run `pnpm dev --host` and set `VITE_SUPA
 - **Planned vs actual:** each set has plan columns (`target_*`), frozen columns (`basis_max_kg`, `prescribed_load_kg`) and actual columns (`actual_*`). Completing a percentage set freezes the max it was based on. Updating a max later changes planned workouts but never completed ones.
 - **Timed sets:** an exercise counts reps or time, chosen from its Reps column header (or its ⋯ → Reps or time). The choice lives in `workout_blocks.settings.measure` (`sec` or `min`). Time is stored in seconds (`target_seconds`, `actual_seconds`) and shown in seconds or minutes, the same way weights are stored in kg. Timed sets don't add reps or set records. Last and best show the times.
 - **Supersets:** consecutive exercise blocks that share `settings.group` show as one card (A1, A2…), open together in Train mode, and move as one when reordering. Pair them from an exercise's ⋯. Every copy (save, repeat, assign, programs) copies `settings`, so supersets and timed exercises come along.
+- **Notes:** each exercise has a note (`workout_blocks.notes`) and each workout has one (`workouts.notes`): form cues, tempo, the session's focus. They show above the sets and at the top of the page, and a collapsed exercise with a note shows a note icon. On a workout a coach assigned, the notes are the coach's: the client reads them as "Note from Coach" and replies in the comments (`protect_coach_*_notes` refuses a client's edit). Every copy carries them.
+- **1RM calculator:** Exercises → the calculator icon, or an exercise's "Estimate from a set", estimates a 1RM from weight × reps with ten formulas (`src/lib/oneRepMax.ts`), shows their average or the one you pick, and a percentage table rounded to your plates. "Save as max" records it with a note saying where it came from. Records and charts still use Epley (`estimate1RM`, mirrored in SQL as `epley_kg`).
 - **Session RPE:** the finish screen asks how hard the workout was, 1–10 (`workouts.rpe`). You can change it from the finished workout's summary, and History shows it. It's part of the trainee's log, so a coach can see it but not set it.
 - **Saving:** every edit updates the screen immediately and saves in the background, in order, per workout. Text autosaves 500 ms after you stop typing. Deleting a block or set shows an Undo toast.
 - **Security:** row-level security restricts every table to its owner. Child rows take their owner from their parent inside the database, so they can't be planted in someone else's workout.
@@ -85,13 +87,14 @@ Components use the semantic names only (`bg-surface`, `text-muted`, `text-accent
 ```
 supabase/migrations   schema, functions (reorder, duplicate, copy, finish, stats, training summary, records), exercise library, programs, coach planning
 supabase/seed.sql     local demo users, history, saved workouts and programs (never pushed)
-supabase/tests        pgTAP tests (owner-only, coaching, coach planning, programs, program saving, insights, appearance, account deletion)
+supabase/tests        pgTAP tests (owner-only, coaching, coach planning, notes and times, programs, program saving, notifications, insights, appearance, account deletion)
+supabase/functions    push-dispatch: the edge function that sends queued notifications (APNs, FCM, web push)
 src/lib               load math, summaries, progress and calendar helpers, Supabase client, native.ts (everything that differs in the apps)
 src/data              TanStack Query hooks (one per resource; useWorkout holds all block/set mutations)
 src/styles            design tokens, themes, glass materials (see "Design system")
 src/ui                design-system primitives; src/ui/charts holds the rings, heatmap and chart kit
 src/features          pages: home, workouts, workout (editor, train mode, templates, coach view), plan (calendar, add sheets), library (saved workouts, programs), exercises, progress, settings, coaching, legal (privacy policy)
-sw/sw.ts              service worker (app shell only; data is never cached)
+sw/sw.ts              service worker (app shell only, data is never cached) and web push
 ios, android          native app projects (Capacitor); assets holds the sources for their icons and splash screens
 ```
 
@@ -115,6 +118,7 @@ The iOS and Android apps are this same web app inside a native shell ([Capacitor
 - The share sheet, clipboard, haptics, keep-awake and status bar use native plugins.
 - The sign-in is kept in native storage, not localStorage, which a phone low on space can clear.
 - There's no service worker or update prompt. Updates come through the stores, so people can be on an older version for a while: **database changes must keep working for the app versions still in use.**
+- Push notifications come through APNs and FCM (`@capacitor/push-notifications`) instead of web push. They need the Push Notifications capability in Xcode and `google-services.json` for Android (see Notifications). Android shows them with `ic_stat_notify`, the dumbbell in white.
 - Android's back button closes an open sheet, then goes back a page, then leaves the app.
 
 **Invite links** open the website, where a client can accept and then use the app. In the app, Settings → Join a coach with a code does the same. Opening links straight in the app needs Universal Links and App Links, which aren't set up.
@@ -138,6 +142,7 @@ Settings → Delete account calls `delete_my_account` (`…_delete_account.sql`)
 - **Saved workouts:** any workout's ⋯ → Save workout keeps a copy in Workouts → Saved. The + on Home, or on a day of the plan, starts from one. A saved workout is a `kind = 'template'` workout, the same row a coach calls a template.
 - **Programs:** a program is weeks of days, and each day holds template workouts (`workouts.program_id`, with `program_day` = week × 7 + weekday, Monday = 0). Each week is its own copy, so weeks can progress; "+ Week" copies the last one. Start program puts every day on the calendar from a Monday (`start_program`) and records it as a run (`program_runs`). Days already past are left out. Stopping a run takes off the workouts not yet started; deleting a program leaves what it already scheduled.
 - **Saving programs:** Plan → ⋯ → Save weeks as program copies the workouts on a stretch of weeks into a new program, each on its weekday. Any workout's ⋯ → Add to program puts a copy on a day of a program, on a new week, or in a new program. A running program's ⋯ → Save to my library copies the run as a program of your own, including one a coach assigned. The app works out the days (`create_program_from_workouts`), except for runs, which are dates minus the run's Monday (`save_run_as_program`). When a workout a run put on your calendar is saved, the "Program · Week N" the run added to its subtitle comes off. Only plans are copied.
+- **Times:** a planned workout can have a time of day (`scheduled_time`, wall-clock time where the trainee is), set beside its date, in Schedule, or when a coach assigns it. A day's workouts sort by time. Templates and program days have no dates, so no times; a dated copy keeps its source's time. Reminders turn date + time into an instant with the trainee's time zone (see Notifications).
 - **Dates:** `scheduled_for` is a local calendar date, and the server never decides what "today" is (its clock is UTC). The app passes the dates, and `src/lib/calendar.ts` does day arithmetic on dates rather than milliseconds, so a daylight-saving change can't move a workout.
 
 ## Coaching
@@ -149,7 +154,48 @@ Turn on **Settings → Coaching tools**. Home then shows a Personal / Coaching s
 - **Assigning:** Assign → Workout copies a template into each selected client's own journal on a date (`assign_template`). The preview shows each client's load from their own max and rounding. Assign → Program starts a program for several clients from a Monday (`start_program`). Later edits to a template or program, or to another client's copy, never reach an assigned copy.
 - **Planning a client's weeks:** the client page shows their calendar. Each day's + adds a template or a blank workout to it.
 - **Reviewing:** a coach can read an active client's workouts, maxes and progress, and can record a client's max. Coach and client share a comment thread on each assigned workout.
-- **Editing until started:** a workout the coach assigned stays theirs to change (title, date, blocks and planned sets) until the client starts it by logging a set. After that it's read-only to the coach, and an edit in flight is refused with a message. A coach can take back an assignment the client hasn't started, and stop a program they assigned: its unstarted workouts come off the calendar.
+- **Notes:** a coach writes a note for the whole workout and a cue on each exercise ("Cue for Alex: elbows tucked"). The client sees them labelled with the coach's name and can't change them; they answer in the comments.
+- **Editing until started:** a workout the coach assigned stays theirs to change (title, date and time, notes, blocks and planned sets) until the client starts it by logging a set. After that it's read-only to the coach, and an edit in flight is refused with a message. A coach can take back an assignment the client hasn't started, and stop a program they assigned: its unstarted workouts come off the calendar.
 - **Security:** coach access is extra policies keyed on active `coach_clients` rows (`…_coaching.sql`, `…_coach_planning.sql`). Guard triggers let anyone other than the owner change only the plan, never the log, the status or whose row it is. Security-definer functions run as their owner and are exempt, so assigning can still stamp rows. `coaching.test.sql` and `coach_planning.test.sql` check that strangers and former coaches see nothing, and that a coach's edits stop when the client starts.
+
+## Notifications
+
+Push notifications reach the iOS and Android apps and the website, even when the app is closed. People turn them on in **Settings → Notifications** (or from the "Get a reminder?" offer after giving a workout a time); nothing asks for permission on launch. What they get is set there too, the same on every device:
+
+- **Workout reminders:** a set time before a workout planned at a time (default 30 minutes), and one reminder on the day for workouts without a time (default 8:00).
+- **Nudge:** at 10:00 when nothing is planned and nothing was done or planned for a while (3, 5, 7 or 14 days; default 5).
+- **From your coach:** a new workout (one per assignment) or program (one per program, not per workout).
+- **Comments:** the other side replied on a workout.
+- **Client activity** (coaches): a client finished a workout you assigned, or joined with your invite.
+
+**How it works** (`…_notifications.sql`): every notification goes through one outbox table, `notifications`. Triggers queue the coaching ones as they happen. A `pg_cron` job runs `run_push_jobs` every minute: `queue_due_reminders` queues the reminders and nudges that have fallen due in each person's time zone, and if anything is waiting, `pg_net` calls the `push-dispatch` edge function. It claims a batch, sends each notification to every device the person has (`push_devices`), and reports back: delivered, retry later, or a dead token to remove. Dedupe keys mean a reminder is queued once however often the job runs, and a notification goes with its workout if that's deleted first. Devices register through `register_push_device`, which also records the time zone; signing out removes the device. Preferences live in `notification_prefs`, not on `profiles`, which coaches and clients can read.
+
+### Setting it up
+
+The migration is safe to deploy before any of this: until the dispatcher is configured, notifications just wait (and are tidied away after 30 days).
+
+1. **Apple (iOS):** in the Apple Developer portal → Certificates, IDs & Profiles → **Keys**, create a key with **Apple Push Notifications service (APNs)**. Download the `.p8` file (only once) and note its Key ID and your Team ID. In Xcode, select the App target → Signing & Capabilities → **+ Capability → Push Notifications**.
+2. **Android:** in the [Firebase console](https://console.firebase.google.com), create a project and add an Android app with the package name `com.insideouttraining.app`. Download `google-services.json` into `android/app/`. Then Project settings → Service accounts → **Generate new private key** (a JSON file; keep it secret).
+3. **Web:** generate a key pair with `pnpm dlx web-push generate-vapid-keys`. Put the public key in Vercel as `VITE_VAPID_PUBLIC_KEY` (and redeploy). Without it the website doesn't offer notifications.
+4. **Supabase:** set the function's secrets (see `supabase/functions/.env.example` for each one). `PUSH_DISPATCH_SECRET` is any long random string, e.g. `openssl rand -hex 24`.
+
+   ```sh
+   pnpm exec supabase secrets set --env-file supabase/functions/.env   # a filled-in copy of .env.example
+   pnpm exec supabase functions deploy push-dispatch --no-verify-jwt
+   pnpm exec supabase db push
+   ```
+
+   Then, in the dashboard's SQL editor, tell the database where the dispatcher is and the same secret:
+
+   ```sql
+   select vault.create_secret('https://<project-ref>.supabase.co/functions/v1/push-dispatch', 'push_dispatch_url');
+   select vault.create_secret('<the PUSH_DISPATCH_SECRET>', 'push_dispatch_secret');
+   ```
+
+5. **Apps:** ship new store builds (`pnpm native:sync`): native push needs the new plugin and the capability.
+
+**Checking on it:** `select * from notifications order by created_at desc` shows what was queued and any `error`; `select * from cron.job_run_details order by start_time desc` shows the job; `net._http_response` shows the dispatcher's replies.
+
+**Locally:** `db:start` leaves out the edge runtime, so serve the function on its own: `pnpm exec supabase functions serve push-dispatch --env-file supabase/functions/.env`, and store the local Vault values with the URL `http://host.docker.internal:54321/functions/v1/push-dispatch`. Web push needs the service worker, which only runs in a build: `pnpm build && pnpm preview` (that build reads `.env.production.local`; use `vite build --mode development` to keep the local database). An iPhone only gets web push from the site added to its Home Screen. A build run from Xcode uses Apple's development servers; the dispatcher notices and remembers that per device.
 
 Not built yet: custom SMTP for emails, and password reset.

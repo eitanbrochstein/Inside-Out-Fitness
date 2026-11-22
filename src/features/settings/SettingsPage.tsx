@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import { useCoaches, useEndCoaching } from '@/data/useCoaching'
 import { useDeleteAccount, useUpdateProfile, useProfile } from '@/data/useProfile'
 import { defaultIncrement, type RoundingMode, type Unit } from '@/lib/load'
+import { forgetThisDevice } from '@/lib/push'
 import { supabase } from '@/lib/supabase'
 import { useDraft } from '@/lib/useAutosave'
 import { Avatar } from '@/ui/Avatar'
@@ -21,6 +22,7 @@ import { Switch } from '@/ui/Switch'
 import { TextField } from '@/ui/TextField'
 import { useAuth, useUserId } from '../auth/AuthProvider'
 import { AppearanceSettings } from './AppearanceSettings'
+import { NotificationSettings } from './NotificationSettings'
 
 const INCREMENTS: Record<Unit, number[]> = { lb: [1, 2.5, 5, 10], kg: [0.5, 1, 1.25, 2.5, 5] }
 
@@ -84,6 +86,9 @@ export function SettingsPage() {
           </div>
         </div>
       </Card>
+
+      <SectionLabel className="mt-7 mb-2 px-1">Notifications</SectionLabel>
+      <NotificationSettings isCoach={profile.is_coach} />
 
       <SectionLabel className="mt-7 mb-2 px-1">Loading</SectionLabel>
       <Card className="divide-y divide-border">
@@ -155,13 +160,19 @@ export function SettingsPage() {
         <ListRow to="/privacy" title="Privacy policy" trailing="chevron" />
       </Card>
 
-      <Button variant="danger-soft" size="lg" block className="mt-8" onClick={() => supabase.auth.signOut()}>
+      <Button variant="danger-soft" size="lg" block className="mt-8" onClick={signOut}>
         <LogOut className="size-5" />
         Sign out
       </Button>
       <DeleteAccount isCoach={profile.is_coach} />
     </Page>
   )
+}
+
+/** This device stops getting the account's notifications first, while it's still allowed to say so. */
+async function signOut() {
+  await forgetThisDevice().catch(() => {})
+  await supabase.auth.signOut()
 }
 
 function NameField({ value, onSave }: { value: string; onSave: (name: string) => void }) {

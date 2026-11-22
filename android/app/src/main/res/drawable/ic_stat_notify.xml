@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The dumbbell from the app icon, as Android's status-bar notification icon: one colour, no background. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M14,22h2a2,2 0,0 1,2 2v16a2,2 0,0 1,-2 2h-2a2,2 0,0 1,-2 -2v-16a2,2 0,0 1,2 -2z M48,22h2a2,2 0,0 1,2 2v16a2,2 0,0 1,-2 2h-2a2,2 0,0 1,-2 -2v-16a2,2 0,0 1,2 -2z M20.5,26h2a1.5,1.5 0,0 1,1.5 1.5v9a1.5,1.5 0,0 1,-1.5 1.5h-2a1.5,1.5 0,0 1,-1.5 -1.5v-9a1.5,1.5 0,0 1,1.5 -1.5z M41.5,26h2a1.5,1.5 0,0 1,1.5 1.5v9a1.5,1.5 0,0 1,-1.5 1.5h-2a1.5,1.5 0,0 1,-1.5 -1.5v-9a1.5,1.5 0,0 1,1.5 -1.5z M24,30h16v4h-16z" />
+</vector>

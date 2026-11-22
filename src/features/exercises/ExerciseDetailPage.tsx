@@ -1,5 +1,5 @@
 import { lazy, Suspense, useMemo, useState, type ReactNode } from 'react'
-import { ChevronRight, History, LineChart, Plus, X } from 'lucide-react'
+import { Calculator, ChevronRight, History, LineChart, Plus, X } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
 import { trendPoints } from '@/features/progress/trend'
@@ -76,6 +76,11 @@ export function ExerciseDetailPage() {
   }
 
   const perHand = exercise.load_basis === 'per_hand'
+  // The calculator starts from your heaviest set, when it was a loaded one.
+  const estimateHref = `/tools/1rm?${new URLSearchParams({
+    exercise: exercise.id,
+    ...(best?.weightKg != null && best.reps >= 1 ? { w: formatNumber(toDisplay(best.weightKg, unit)), r: String(best.reps) } : {}),
+  })}`
   const fmt = (kg: number | null, reps: number) => (kg == null ? `${reps} reps` : `${formatWeight(kg, unit, { perHand })} × ${reps}`)
 
   return (
@@ -114,7 +119,17 @@ export function ExerciseDetailPage() {
           )
         })}
       </div>
-      <p className="mt-2 px-1 text-footnote text-faint">Optional. Percentage-based sets calculate from these.</p>
+      <div className="mt-2 flex items-start justify-between gap-3 px-1">
+        <p className="text-footnote text-faint">Optional. Percentage-based sets calculate from these.</p>
+        <Link
+          to={estimateHref}
+          viewTransition
+          className="flex shrink-0 items-center gap-1.5 text-footnote font-semibold text-accent-text active:opacity-60"
+        >
+          <Calculator className="size-3.5" />
+          Estimate from a set
+        </Link>
+      </div>
 
       {trend.data.length > 1 && (
         <Card className="mt-3 px-2 pt-4 pb-2">

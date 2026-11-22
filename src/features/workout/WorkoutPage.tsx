@@ -21,6 +21,7 @@ import { groupBlocks, groupOf, orderWithAfter, supersetOf, withSettings } from '
 import { programDayLabel } from '@/lib/calendar'
 import { formatScheduled, formatTimestamp, lowerRelative } from '@/lib/dates'
 import { supabase } from '@/lib/supabase'
+import { offerReminders } from '@/features/settings/offerReminders'
 import { useAutosave, useDraft } from '@/lib/useAutosave'
 import { useWakeLock } from '@/lib/useWakeLock'
 import { BottomBar } from '@/ui/BottomBar'
@@ -32,6 +33,7 @@ import { Page } from '@/ui/Page'
 import { PageHeader } from '@/ui/PageHeader'
 import { SegmentedControl } from '@/ui/SegmentedControl'
 import { Skeleton } from '@/ui/Skeleton'
+import { TimePill } from '@/ui/TimePill'
 import { ease } from '@/ui/motion'
 import { useWorkoutPage, WorkoutPageContext, type Mode, type WorkoutPageState } from './context'
 import { Comments } from './Comments'
@@ -42,6 +44,7 @@ import { BlockActionsSheet, FinishSheet, MeasureSheet, ScheduleSheet, WorkoutAct
 import { SupersetCard } from './SupersetCard'
 import { TextBlock } from './TextBlock'
 import { TrainStrip } from './TrainStrip'
+import { WorkoutNote } from './WorkoutNote'
 
 export function WorkoutPage() {
   const { id } = useParams()
@@ -108,6 +111,9 @@ function WorkoutView({ doc }: { doc: WorkoutDoc }) {
   const client = clients.byId.get(doc.owner_id)
   const ownerName = client?.name ?? 'Client'
   const firstName = ownerName.split(/\s+/)[0]
+  // On a workout a coach assigned, the notes are the coach's: the client reads them and replies in the comments.
+  const notesLocked = isOwner && !!doc.assigned_by && doc.assigned_by !== doc.owner_id
+  const noteFrom = notesLocked ? doc.coach?.display_name || 'your coach' : !isOwner && !doc.assigned_by ? firstName : null
   const actions = useWorkoutActions(doc.id, {
     ownerId: doc.owner_id,
     guarded: !isOwner,
@@ -253,10 +259,10 @@ function WorkoutView({ doc }: { doc: WorkoutDoc }) {
   }
 
   // Saving and scheduling keep you on this page; the toast leads to the copy.
-  const copyAndStay = (kind: 'workout' | 'template', message: string, scheduledFor?: string) => {
+  const copyAndStay = (kind: 'workout' | 'template', message: string, scheduledFor?: string, scheduledTime?: string | null) => {
     const id = crypto.randomUUID()
     copy.mutate(
-      { source: doc.id, id, kind, scheduledFor },
+      { source: doc.id, id, kind, scheduledFor, scheduledTime },
       { onSuccess: () => toast(message, { action: { label: 'Open', onClick: () => navigate(`/w/${id}`, { viewTransition: true }) } }) },
     )
   }
@@ -379,6 +385,9 @@ function WorkoutView({ doc }: { doc: WorkoutDoc }) {
     readOnly,
     isTemplate,
     isCoach,
+    notesLocked,
+    noteFrom,
+    clientFirstName: !isOwner && client ? firstName : null,
     statsHref: (exerciseId) => (!isOwner ? `/coach/clients/${doc.owner_id}/progress/${exerciseId}` : `/exercises/${exerciseId}`),
     // A coach looking at an unstarted assignment wants the plan, not "0 of 3 sets".
     summaryMode: mode === 'edit' || (readOnly && doc.status === 'planned') ? 'edit' : completed ? 'done' : 'train',
@@ -445,6 +454,8 @@ function WorkoutView({ doc }: { doc: WorkoutDoc }) {
         )}
 
         {completed && !isTemplate && !reordering && mode === 'train' && <CompletedSummary doc={doc} />}
+
+        {!reordering && <WorkoutNote />}
 
         {reordering ? (
           <>
@@ -559,7 +570,7 @@ function WorkoutView({ doc }: { doc: WorkoutDoc }) {
           <FinishSheet {...sheetProps('finish')} />
           <ScheduleSheet
             {...sheetProps('schedule')}
-            onSchedule={(date) => copyAndStay('workout', `Added to ${lowerRelative(formatScheduled(date))}`, date)}
+            onSchedule={(date, time) => copyAndStay('workout', `Added to ${lowerRelative(formatScheduled(date))}`, date, time)}
           />
         </>
       )}
@@ -614,15 +625,38 @@ function TitleField({
 
 function SubtitleField({ doc, editable, showDate }: { doc: WorkoutDoc; editable: boolean; showDate: boolean }) {
   const { actions } = useWorkoutPage()
+  const uid = useUserId()
   const { draft, setDraft, setFocused } = useDraft(doc.subtitle)
   const { schedule, flush } = useAutosave((subtitle: string) => actions.updateWorkout.mutate({ subtitle }))
 
+  // A time only means something on a day, so clearing the date clears it too.
   const date = (
-    <DatePill
-      label="Workout date"
-      value={doc.scheduled_for}
-      onChange={editable ? (scheduled_for) => actions.updateWorkout.mutate({ scheduled_for }) : undefined}
-    />
+    <span className="flex flex-wrap gap-2">
+      <DatePill
+        label="Workout date"
+        value={doc.scheduled_for}
+        onChange={
+          editable
+            ? (scheduled_for) => actions.updateWorkout.mutate(scheduled_for ? { scheduled_for } : { scheduled_for: null, scheduled_time: null })
+            : undefined
+        }
+      />
+      {doc.scheduled_for && (editable || doc.scheduled_time) && (
+        <TimePill
+          label="Workout time"
+          value={doc.scheduled_time}
+          onChange={
+            editable
+              ? (scheduled_time) => {
+                  actions.updateWorkout.mutate({ scheduled_time })
+                  // Your own workout at a time: a reminder is the point, if this device isn't set up for one.
+                  if (scheduled_time && doc.owner_id === uid) void offerReminders()
+                }
+              : undefined
+          }
+        />
+      )}
+    </span>
   )
 
   return (

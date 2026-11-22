@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { formatChange, formatCompact, formatSetTime, formatVolume, plural, rpeLabel } from './format'
+import { compareTimes, formatChange, formatCompact, formatSetTime, formatTime, formatVolume, plural, rpeLabel } from './format'
 
 test('plural', () => {
   expect(plural(1, 'set')).toBe('1 set')
@@ -36,4 +36,15 @@ test('rpeLabel', () => {
   expect(rpeLabel(8)).toBe('Hard')
   expect(rpeLabel(10)).toBe('Max effort')
   expect(rpeLabel(14)).toBe('Max effort')
+})
+
+test('formatTime reads Postgres times either way, in the device style', () => {
+  const evening = new Date(2000, 0, 1, 18, 30).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+  expect(formatTime('18:30:00')).toBe(evening)
+  expect(formatTime('18:30')).toBe(evening)
+  expect(formatTime('07:05')).toMatch(/7:05/)
+})
+
+test('compareTimes puts earlier first and untimed last', () => {
+  expect(['18:30:00', null, '07:00', '07:00:00'].sort(compareTimes)).toEqual(['07:00', '07:00:00', '18:30:00', null])
 })

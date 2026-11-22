@@ -399,6 +399,10 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# The database calls this with its own shared secret (see README → Notifications), not a user's JWT.
+[functions.push-dispatch]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

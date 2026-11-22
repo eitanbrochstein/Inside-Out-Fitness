@@ -27,9 +27,15 @@
             android:grantUriPermissions="true">
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
         </provider>
+
+        <!-- Push notifications: the small icon in the status bar (white on transparent) and its tint. -->
+        <meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/ic_stat_notify" />
+        <meta-data android:name="com.google.firebase.messaging.default_notification_color" android:resource="@color/notification_accent" />
     </application>
 
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Android 13+ asks before showing notifications; the app asks only from Settings or after you set a workout time. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>

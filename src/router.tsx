@@ -14,6 +14,7 @@ import { ExerciseDetailPage } from './features/exercises/ExerciseDetailPage'
 import { ExercisesPage } from './features/exercises/ExercisesPage'
 import { HomePage } from './features/home/HomePage'
 import { PrivacyPage } from './features/legal/PrivacyPage'
+import { PushSync } from './features/settings/PushSync'
 import { SettingsPage } from './features/settings/SettingsPage'
 import { ThemeSync } from './features/settings/ThemeSync'
 import { ProgramPage } from './features/library/ProgramPage'
@@ -29,11 +30,13 @@ const progressPage = async () => ({ Component: (await import('./features/progres
 const exerciseProgressPage = async () => ({
   Component: (await import('./features/progress/ExerciseProgressPage')).ExerciseProgressPage,
 })
+const oneRepMaxPage = async () => ({ Component: (await import('./features/tools/OneRepMaxPage')).OneRepMaxPage })
 
 function AppLayout() {
   return (
     <>
       <ThemeSync />
+      <PushSync />
       <ChartDefs />
       <StatusBarVeil />
       <ScrollRestoration />
@@ -88,6 +91,7 @@ export const router = createBrowserRouter([
           { path: 'programs/:id', Component: ProgramPage },
           { path: 'exercises', Component: ExercisesPage },
           { path: 'exercises/:id', Component: ExerciseDetailPage },
+          { path: 'tools/1rm', lazy: oneRepMaxPage },
           { path: 'progress/:exerciseId', lazy: exerciseProgressPage },
           { path: 'settings', Component: SettingsPage },
         ],

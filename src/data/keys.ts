@@ -13,6 +13,7 @@ export const keys = {
   summary: (owner: string, weeks: number) => ['stats', owner, 'summary', weeks] as const,
   records: (owner: string, scope: string) => ['stats', owner, 'records', scope] as const,
   weeklyGoal: (owner: string) => ['profile', owner, 'weekly_goal'] as const,
+  notificationPrefs: (uid: string) => ['profile', uid, 'notifications'] as const,
   // coaching
   clients: (uid: string) => ['coaching', uid, 'clients'] as const,
   coaches: (uid: string) => ['coaching', uid, 'coaches'] as const,

@@ -18,6 +18,12 @@ export interface WorkoutPageState {
   isTemplate: boolean
   /** Coaches call saved workouts templates and assign them to clients. */
   isCoach: boolean
+  /** The owner reading a workout a coach assigned: its notes are the coach's, to read and not change. */
+  notesLocked: boolean
+  /** Who wrote the notes on this page, when it wasn't you: the coach, or the client on their own workout. */
+  noteFrom: string | null
+  /** The client's first name when you're coaching them, for prompts like "Cue for Alex". */
+  clientFirstName: string | null
   statsHref: (exerciseId: string) => string
   summaryMode: SummaryMode
   units: { unit: Unit; rounding: Rounding }

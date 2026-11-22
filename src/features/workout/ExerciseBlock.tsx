@@ -1,18 +1,17 @@
-import { Check, ChevronRight, Ellipsis } from 'lucide-react'
+import { Check, ChevronRight, Ellipsis, StickyNote } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Link } from 'react-router'
 import { MAX_LABEL, type BlockWithSets, type ExerciseStats, type MaxKind } from '@/data/types'
 import { measureOf } from '@/lib/blocks'
 import { formatSetTime } from '@/lib/format'
 import { formatWeight, isPercentSet, type Unit } from '@/lib/load'
-import { useAutosave, useDraft } from '@/lib/useAutosave'
 import { exerciseSummary } from '@/lib/summary'
-import { AutoTextarea } from '@/ui/AutoTextarea'
 import { Card } from '@/ui/Card'
 import { ProgressRing } from '@/ui/charts/ProgressRing'
 import { IconButton } from '@/ui/IconButton'
 import { ease } from '@/ui/motion'
 import { loadContextFor, useWorkoutPage } from './context'
+import { NoteCallout, NoteField } from './Note'
 import { SetTable } from './SetTable'
 
 const topSetLabel = (kg: number | null, reps: number | null, unit: Unit) =>
@@ -62,6 +61,7 @@ export function ExerciseBlock({ block, embedded, tag }: { block: BlockWithSets; 
                 <span className="shrink-0 rounded-md bg-accent-soft px-1.5 py-0.5 text-micro font-bold text-accent-text tabular-nums">{tag}</span>
               )}
               <span className="block truncate text-headline font-semibold">{block.exercise?.name ?? 'Exercise'}</span>
+              {!open && block.notes.trim() && <StickyNote aria-label="Has a note" className="size-3.5 shrink-0 text-accent-text" />}
             </span>
             <span className="mt-1 block truncate text-subhead text-muted tabular-nums">{summary}</span>
           </span>
@@ -126,8 +126,8 @@ export function ExerciseBlock({ block, embedded, tag }: { block: BlockWithSets; 
                   {showStats && <StatsLine stats={stats} href={page.statsHref(block.exercise_id!)} unit={ctx.unit} timed={measure !== 'reps'} />}
                 </div>
               )}
+              <BlockNote block={block} />
               <SetTable block={block} />
-              <BlockNotes block={block} />
             </div>
           </motion.div>
         )}
@@ -157,29 +157,25 @@ function StatsLine({ stats, href, unit, timed }: { stats: ExerciseStats; href: s
   )
 }
 
-function BlockNotes({ block }: { block: BlockWithSets }) {
-  const { mode, actions } = useWorkoutPage()
-  const { draft, setDraft, setFocused } = useDraft(block.notes)
-  const { schedule, flush } = useAutosave((notes: string) => actions.updateBlock.mutate({ id: block.id, patch: { notes } }))
-
-  if (mode === 'train') {
-    return block.notes ? <p className="mt-3 text-callout whitespace-pre-wrap text-muted">{block.notes}</p> : null
+/** The exercise's note, above its sets: form cues, tempo, reminders. */
+function BlockNote({ block }: { block: BlockWithSets }) {
+  const { mode, actions, readOnly, notesLocked, noteFrom, clientFirstName, isTemplate, isCoach } = useWorkoutPage()
+  if (mode === 'train' || readOnly || notesLocked) {
+    return block.notes.trim() ? <NoteCallout text={block.notes} from={noteFrom} className="mb-3" /> : null
   }
   return (
-    <AutoTextarea
-      aria-label="Exercise notes"
-      placeholder="Add a note…"
-      value={draft}
-      onFocus={() => setFocused(true)}
-      onBlur={() => {
-        setFocused(false)
-        flush()
-      }}
-      onChange={(e) => {
-        setDraft(e.target.value)
-        schedule(e.target.value)
-      }}
-      className="mt-3 text-body leading-snug text-muted"
+    <NoteField
+      value={block.notes}
+      onSave={(notes) => actions.updateBlock.mutate({ id: block.id, patch: { notes } })}
+      label="Exercise note"
+      placeholder={
+        clientFirstName
+          ? `Cue for ${clientFirstName}: form, tempo, reminders…`
+          : isTemplate && isCoach
+            ? 'Cue for your clients: form, tempo, reminders…'
+            : 'Add a note: form cues, reminders…'
+      }
+      className="mb-3"
     />
   )
 }

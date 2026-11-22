@@ -18,10 +18,13 @@ import {
   weekdayOf,
 } from './calendar'
 
-const w = (over: Partial<{ id: string; status: string; scheduled_for: string | null; completed_at: string | null; created_at: string }>) => ({
+const w = (
+  over: Partial<{ id: string; status: string; scheduled_for: string | null; scheduled_time: string | null; completed_at: string | null; created_at: string }>,
+) => ({
   id: 'w',
   status: 'planned',
   scheduled_for: null,
+  scheduled_time: null as string | null,
   completed_at: null,
   created_at: '2026-10-01T00:00:00.000Z',
   ...over,
@@ -97,6 +100,16 @@ describe('placeOnDays', () => {
       w({ id: 'done', status: 'completed', scheduled_for: day, completed_at: new Date(2026, 9, 30, 9).toISOString() }),
     ]
     expect(placeOnDays(items, days).get(day)?.map((x) => x.id)).toEqual(['done', 'live', 'p1', 'p2'])
+  })
+
+  test('planned ones in order of their time, untimed last', () => {
+    const day = '2026-10-30'
+    const items = [
+      w({ id: 'untimed', scheduled_for: day, created_at: '2026-09-01T00:00:00.000Z' }),
+      w({ id: 'evening', scheduled_for: day, scheduled_time: '18:30:00' }),
+      w({ id: 'morning', scheduled_for: day, scheduled_time: '07:00' }),
+    ]
+    expect(placeOnDays(items, days).get(day)?.map((x) => x.id)).toEqual(['morning', 'evening', 'untimed'])
   })
 
   test('dayOf falls back to the planned date', () => {

@@ -7,7 +7,7 @@ import { StatusBarVeil } from '@/ui/StatusBarVeil'
 
 // Both app stores expect a way to reach you. The draft notice below shows until this is filled in.
 const CONTACT_EMAIL = 'eitantravels25@gmail.com'
-const UPDATED = '6 November 2026'
+const UPDATED = '18 November 2026'
 
 function Section({ id, title, children }: { id?: string; title: string; children: ReactNode }) {
   return (
@@ -51,6 +51,10 @@ export function PrivacyPage() {
           <li>Your email address, so you can sign in. We email you a one-time code each time you sign in.</li>
           <li>Your name, if you add one.</li>
           <li>The training you enter: workouts, sets, weights, maxes, notes, comments and your settings.</li>
+          <li>
+            If you turn on notifications: a push token for each phone or browser you turn them on for, and your time zone, so reminders
+            arrive at the right time.
+          </li>
         </Bullets>
         <p>
           We don't ask for your location, contacts, photos or health-app data. The app has no ads, analytics or trackers. Our hosting
@@ -75,7 +79,8 @@ export function PrivacyPage() {
             <strong>Your clients, if you coach.</strong> They see your name, the workouts you assign and your comments.
           </li>
           <li>
-            <strong>Our service providers.</strong> Supabase stores the database and handles sign-in. Vercel hosts the website.
+            <strong>Our service providers.</strong> Supabase stores the database and handles sign-in. Vercel hosts the website. If you turn
+            on notifications, their text goes through Apple (iPhone), Google (Android) or your browser's push service to reach you.
           </li>
           <li>
             <strong>Authorities,</strong> if the law requires us to share it.
