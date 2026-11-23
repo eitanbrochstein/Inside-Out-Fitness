@@ -180,7 +180,7 @@ The migration is safe to deploy before any of this: until the dispatcher is conf
 4. **Supabase:** set the function's secrets (see `supabase/functions/.env.example` for each one). `PUSH_DISPATCH_SECRET` is any long random string, e.g. `openssl rand -hex 24`.
 
    ```sh
-   pnpm exec supabase secrets set --env-file supabase/functions/.env   # a filled-in copy of .env.example
+   pnpm exec supabase secrets set --env-file supabase/functions/.env.production   # a filled-in copy of .env.example, kept apart from the local .env
    pnpm exec supabase functions deploy push-dispatch --no-verify-jwt
    pnpm exec supabase db push
    ```
