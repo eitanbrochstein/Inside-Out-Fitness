@@ -14,6 +14,16 @@ const AUTH_ERRORS: Record<string, string> = {
   over_request_rate_limit: 'Too many attempts. Wait a minute, then try again.',
   email_address_invalid: "That email address doesn't look right.",
   signup_disabled: "New accounts can't be created right now.",
+  invalid_credentials: 'Wrong email or password.',
+}
+
+/**
+ * Whether this is the App Store review account (VITE_REVIEW_EMAIL), which signs in with a password:
+ * Apple's reviewers can't receive an emailed code. Only that address shows the password field.
+ */
+export function isReviewEmail(address: string, review: string | undefined = import.meta.env.VITE_REVIEW_EMAIL) {
+  const want = review?.trim().toLowerCase()
+  return !!want && address.trim().toLowerCase() === want
 }
 
 /** Plain wording for a supabase-js auth error, chosen by its code. */

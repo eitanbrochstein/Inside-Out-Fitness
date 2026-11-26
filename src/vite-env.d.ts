@@ -8,6 +8,8 @@ interface ImportMetaEnv {
   readonly VITE_APP_URL?: string
   /** Web push's public (VAPID) key. Without it the website offers no notifications; the apps don't need it. */
   readonly VITE_VAPID_PUBLIC_KEY?: string
+  /** The App Store review account's email. That one address signs in with a password instead of a code. */
+  readonly VITE_REVIEW_EMAIL?: string
 }
 
 interface ImportMeta {

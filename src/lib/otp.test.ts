@@ -1,5 +1,20 @@
 import { expect, test } from 'vitest'
-import { authErrorMessage, cleanCode } from './otp'
+import { authErrorMessage, cleanCode, isReviewEmail } from './otp'
+
+test('isReviewEmail matches only the configured review address', () => {
+  expect(isReviewEmail('review@example.com', 'review@example.com')).toBe(true)
+  expect(isReviewEmail('  Review@Example.com ', 'review@example.com ')).toBe(true)
+  expect(isReviewEmail('someone@example.com', 'review@example.com')).toBe(false)
+  expect(isReviewEmail('review@example.com.au', 'review@example.com')).toBe(false)
+  // Not configured: nobody gets a password field, including an empty email.
+  expect(isReviewEmail('review@example.com', undefined)).toBe(false)
+  expect(isReviewEmail('', '')).toBe(false)
+  expect(isReviewEmail('', '  ')).toBe(false)
+})
+
+test('authErrorMessage words a wrong password plainly', () => {
+  expect(authErrorMessage({ message: 'Invalid login credentials', code: 'invalid_credentials', status: 400 })).toBe('Wrong email or password.')
+})
 
 test('cleanCode keeps up to six digits', () => {
   expect(cleanCode('123456')).toBe('123456')

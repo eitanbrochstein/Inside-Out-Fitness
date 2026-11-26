@@ -19,6 +19,9 @@ export interface PendingSignIn {
 export const sendCode = (email: string, mode: AuthMode) =>
   supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: mode === 'signup' } })
 
+/** The App Store review account only (isReviewEmail): everyone else has no password. */
+export const signInWithPassword = (email: string, password: string) => supabase.auth.signInWithPassword({ email, password })
+
 const KEY = 'pendingSignIn'
 // Longer than a code lasts, so someone back after it expired can send a new one without retyping.
 const KEEP_MS = 60 * 60 * 1000

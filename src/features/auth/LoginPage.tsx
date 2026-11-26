@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router'
-import { authErrorMessage } from '@/lib/otp'
+import { authErrorMessage, isReviewEmail } from '@/lib/otp'
 import { Aurora } from '@/ui/Aurora'
 import { Button } from '@/ui/Button'
 import { Card } from '@/ui/Card'
@@ -9,9 +9,12 @@ import { Page } from '@/ui/Page'
 import { SegmentedControl } from '@/ui/SegmentedControl'
 import { TextField } from '@/ui/TextField'
 import { useAuth } from './AuthProvider'
-import { savePendingSignIn, sendCode, type AuthMode, type PendingSignIn } from './emailCode'
+import { savePendingSignIn, sendCode, signInWithPassword, type AuthMode, type PendingSignIn } from './emailCode'
 
-/** /login: asks for an email and sends a 6-digit code, which /login/verify takes. */
+/**
+ * /login: asks for an email and sends a 6-digit code, which /login/verify takes. The App Store review
+ * address (VITE_REVIEW_EMAIL) gets a password field instead, since a reviewer can't read the code.
+ */
 export function LoginPage() {
   const { session } = useAuth()
   const location = useLocation()
@@ -21,8 +24,10 @@ export function LoginPage() {
   const from = state?.from
   const [mode, setMode] = useState<AuthMode>(state?.mode ?? 'signin')
   const [email, setEmail] = useState(state?.email ?? '')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const review = isReviewEmail(email)
 
   if (session) return <Navigate to={from ?? '/'} replace />
 
@@ -31,6 +36,13 @@ export function LoginPage() {
     setBusy(true)
     setError(null)
     const address = email.trim()
+    if (review) {
+      // On success the session arrives through AuthProvider, and the Navigate above takes over.
+      const { error } = await signInWithPassword(address, password)
+      setBusy(false)
+      if (error) setError(authErrorMessage(error))
+      return
+    }
     const { error } = await sendCode(address, mode)
     setBusy(false)
     if (error) return setError(authErrorMessage(error))
@@ -72,15 +84,28 @@ export function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
+          {review && (
+            <TextField
+              type="password"
+              autoComplete="current-password"
+              placeholder="Password"
+              aria-label="Password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          )}
           {error && (
             <p role="alert" className="px-1 text-subhead text-danger">
               {error}
             </p>
           )}
           <Button type="submit" size="lg" block loading={busy} className="mt-2">
-            Email me a code
+            {review ? 'Sign in' : 'Email me a code'}
           </Button>
-          <p className="px-1 text-center text-footnote text-muted">We'll email you a 6-digit code. No password needed.</p>
+          <p className="px-1 text-center text-footnote text-muted">
+            {review ? 'This account signs in with a password.' : "We'll email you a 6-digit code. No password needed."}
+          </p>
         </form>
       </Card>
       <Link to="/privacy" viewTransition className="mt-5 self-center text-footnote text-muted">

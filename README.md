@@ -127,10 +127,14 @@ The iOS and Android apps are this same web app inside a native shell ([Capacitor
 
 - The app id `com.insideouttraining.app` (`capacitor.config.json`) can't change once an app is published.
 - The home screen shows the short name "Inside Out". The store listing's name is set in App Store Connect and Play Console.
-- The minimum iOS version is 16.4, because Tailwind v4 needs Safari 16.4.
+- The minimum iOS version is 16.4, because Tailwind v4 needs Safari 16.4. Xcode's "Update to recommended settings" raises it, so check `IPHONEOS_DEPLOYMENT_TARGET` after accepting one.
+- The iOS app is iPhone only (`TARGETED_DEVICE_FAMILY = 1`): the layout is a phone-width column, and an iPad build would need its own 13" screenshots. iPads still run it as an iPhone app.
+- Every upload to App Store Connect needs a higher build number (`CURRENT_PROJECT_VERSION`, Xcode → App target → General → Build).
 - Before Chromium 140, Android's web view can't draw behind the system bars, so older phones show dark bars above and below the page, even on a light theme.
 
 **Before submitting:** fill in `CONTACT_EMAIL` in `src/features/legal/PrivacyPage.tsx` and review that policy. Google Play's deletion link is `<your site>/privacy#delete-account`.
+
+**App review sign-in:** reviewers can't receive an emailed code, so one address signs in with a password. Set `VITE_REVIEW_EMAIL` in `.env.production.local` before `pnpm native:sync` (it refuses to build without one and prints the address it baked in), then create that account in the Supabase dashboard (Authentication → Users → Add user → Create new user, with a password and **Auto Confirm User** on). Typing that address on the sign-in screen shows a password field; every other address still gets a code. Give the email and password to Apple in App Store Connect → App Review Information → Sign-in required. No one else has a password, so the field can't sign anyone else in.
 
 ## Account deletion
 
