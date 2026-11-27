@@ -8,6 +8,8 @@ export const duration = { fast: 0.15, base: 0.25, slow: 0.4 }
 export const spring = {
   /** Sliding indicators: the segmented control, the tab bar's lens. */
   snappy: { type: 'spring', stiffness: 500, damping: 38 },
+  /** Something held under a finger: stiff enough to keep up, damped enough not to wobble. */
+  follow: { type: 'spring', stiffness: 900, damping: 60 },
   /** Sheets and panels. */
   sheet: { type: 'spring', stiffness: 420, damping: 40 },
   /** Rings and bars filling up. */

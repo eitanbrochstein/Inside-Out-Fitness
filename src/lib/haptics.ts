@@ -26,3 +26,15 @@ export function success() {
     // unsupported
   }
 }
+
+/* Selection ticks for a finger sliding across choices (the tab bar's lens). Native only: a browser
+   buzz on every step would be too much. */
+export function selectionStart() {
+  if (isNative) Haptics.selectionStart().catch(() => {})
+}
+export function selectionChanged() {
+  if (isNative) Haptics.selectionChanged().catch(() => {})
+}
+export function selectionEnd() {
+  if (isNative) Haptics.selectionEnd().catch(() => {})
+}

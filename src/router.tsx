@@ -22,7 +22,6 @@ import { WorkoutPage } from './features/workout/WorkoutPage'
 import { WorkoutsPage } from './features/workouts/WorkoutsPage'
 import { ChartDefs } from './ui/charts/ChartDefs'
 import { Splash } from './ui/Splash'
-import { StatusBarVeil } from './ui/StatusBarVeil'
 import { TabLayout } from './ui/TabLayout'
 
 // Charts are lazy-loaded so they don't weigh down the first paint.
@@ -38,7 +37,6 @@ function AppLayout() {
       <ThemeSync />
       <PushSync />
       <ChartDefs />
-      <StatusBarVeil />
       <ScrollRestoration />
       <Outlet />
     </>

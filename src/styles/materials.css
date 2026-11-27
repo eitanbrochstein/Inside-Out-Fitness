@@ -9,7 +9,7 @@
  */
 
 @layer components {
-  /* Floating chrome: tab bar, bottom bars, status-bar veil. */
+  /* Floating chrome: tab bar, bottom bars. */
   .glass-surface {
     border-color: var(--glass-edge);
     background:
@@ -172,6 +172,19 @@
       inset 0 -1px 0 var(--glass-shade),
       0 0 0 1px var(--glass-edge),
       var(--elev-sm);
+    transition: box-shadow var(--dur-fast) var(--ease-smooth);
+  }
+  /* Held under a finger (the tab bar's lens): clearer glass with a brighter rim, lifted off the bar. */
+  .glass-lens[data-lifted] {
+    background:
+      radial-gradient(120% 90% at 50% 0%, var(--glass-sheen), transparent 65%),
+      color-mix(in srgb, var(--glass-press) 60%, transparent);
+    box-shadow:
+      inset 0 1px 0 var(--glass-highlight),
+      inset 0 0 0 1px var(--glass-highlight),
+      inset 0 -1px 0 var(--glass-shade),
+      0 0 0 1px var(--glass-edge),
+      var(--glass-shadow);
   }
 
   /* Large display lettering only. */
